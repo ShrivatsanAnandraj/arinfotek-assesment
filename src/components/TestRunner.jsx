@@ -8,6 +8,7 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
   const [answers, setAnswers] = useState({});
   const [secondsLeft, setSecondsLeft] = useState(test.duration_minutes * 60);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [reviewMode, setReviewMode] = useState(false);
   const [shuffled, setShuffled] = useState([]);
 
   useEffect(() => {
@@ -41,15 +42,17 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
   }, [answers, total, test.id, studentInfo, onSubmit]);
 
   useEffect(() => {
+    if (reviewMode) return;
     if (secondsLeft <= 0) {
       submitTest();
       return;
     }
     const timer = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearInterval(timer);
-  }, [secondsLeft, submitTest]);
+  }, [secondsLeft, submitTest, reviewMode]);
 
   const selectAnswer = (questionId, originalOptionIndex) => {
+    if (reviewMode) return;
     setAnswers((prev) => ({ ...prev, [questionId]: originalOptionIndex }));
   };
 
@@ -64,30 +67,37 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
   if (shuffled.length === 0) return null;
 
   const current = shuffled[currentIndex];
-  const isLast = currentIndex === total - 1;
   const isFirst = currentIndex === 0;
+  const isLast = currentIndex === total - 1;
 
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
         {/* Top bar */}
         <div className="bg-primary px-6 py-3 flex items-center justify-between text-white">
-          <div className="font-bold text-sm">{test.title}</div>
+          <div className="flex items-center gap-3">
+            <div className="font-bold text-sm">{test.title}</div>
+            {reviewMode && (
+              <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">REVIEW MODE</span>
+            )}
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-xs text-slate-200">
               {answeredCount}/{total} answered
             </span>
-            <div
-              className={`font-mono font-bold text-lg px-3 py-1 rounded-lg ${
-                secondsLeft <= 60
-                  ? 'bg-red-500 animate-pulse'
-                  : secondsLeft <= 300
-                  ? 'bg-yellow-500'
-                  : 'bg-white/20'
-              }`}
-            >
-              {formatTime(secondsLeft)}
-            </div>
+            {!reviewMode && (
+              <div
+                className={`font-mono font-bold text-lg px-3 py-1 rounded-lg ${
+                  secondsLeft <= 60
+                    ? 'bg-red-500 animate-pulse'
+                    : secondsLeft <= 300
+                    ? 'bg-yellow-500'
+                    : 'bg-white/20'
+                }`}
+              >
+                {formatTime(secondsLeft)}
+              </div>
+            )}
           </div>
         </div>
 
@@ -117,10 +127,15 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
                   <button
                     key={i}
                     onClick={() => selectAnswer(current.id, opt.originalIndex)}
+                    disabled={reviewMode}
                     className={`flex items-center gap-3 px-5 py-3.5 rounded-xl border-2 text-left transition-all ${
-                      isSelected
-                        ? 'border-primary bg-primary/5 shadow-sm'
-                        : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'
+                      reviewMode
+                        ? isSelected
+                          ? 'border-primary bg-primary/10 cursor-default'
+                          : 'border-slate-100 cursor-default opacity-60'
+                        : isSelected
+                        ? 'border-primary bg-primary/5 shadow-sm cursor-pointer'
+                        : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
                     }`}
                   >
                     <span
@@ -140,33 +155,64 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setCurrentIndex((i) => i - 1)}
-              disabled={isFirst}
-              className="px-5 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
-            >
-              Previous
-            </button>
+          {!reviewMode && (
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setCurrentIndex((i) => i - 1)}
+                disabled={isFirst}
+                className="px-5 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              >
+                Previous
+              </button>
 
-            <div className="flex gap-2">
-              {isLast ? (
-                <button
-                  onClick={() => setShowConfirm(true)}
-                  className="px-6 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white shadow-md hover:shadow-orange-200 transition"
-                >
-                  Submit Test
-                </button>
-              ) : (
-                <button
-                  onClick={() => setCurrentIndex((i) => i + 1)}
-                  className="px-6 py-2.5 rounded-lg font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
-                >
-                  Next
-                </button>
-              )}
+              <div className="flex gap-2">
+                {isLast ? (
+                  <button
+                    onClick={() => setShowConfirm(true)}
+                    className="px-6 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white shadow-md hover:shadow-orange-200 transition"
+                  >
+                    Submit Test
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setCurrentIndex((i) => i + 1)}
+                    className="px-6 py-2.5 rounded-lg font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
+                  >
+                    Next
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {reviewMode && (
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                disabled={isFirst}
+                className="px-5 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              >
+                Previous
+              </button>
+              <div className="flex gap-2">
+                {isLast ? (
+                  <button
+                    onClick={submitTest}
+                    className="px-6 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white shadow-md hover:shadow-orange-200 transition"
+                  >
+                    Submit Now
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setCurrentIndex((i) => i + 1)}
+                    className="px-6 py-2.5 rounded-lg font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
+                  >
+                    Next
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Question palette */}
@@ -201,7 +247,7 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 className="text-lg font-black text-slate-800 mb-2">Submit Test?</h3>
+            <h3 className="text-lg font-black text-slate-800 mb-2">Are you sure you want to submit?</h3>
             <p className="text-sm text-slate-500 mb-1">
               You have answered <span className="font-bold text-primary">{answeredCount}</span> of <span className="font-bold">{total}</span> questions.
             </p>
@@ -213,16 +259,16 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
             {answeredCount === total && <div className="mb-4" />}
             <div className="flex gap-3">
               <button
-                onClick={() => setShowConfirm(false)}
+                onClick={() => { setShowConfirm(false); setReviewMode(true); }}
                 className="flex-1 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition"
               >
-                Go Back
+                No, Review
               </button>
               <button
                 onClick={submitTest}
                 className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white shadow-md transition"
               >
-                Confirm
+                Yes, Submit
               </button>
             </div>
           </div>

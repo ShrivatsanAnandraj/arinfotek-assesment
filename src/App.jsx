@@ -4,6 +4,7 @@ import Footer from './components/Footer'
 import JoinCard from './components/JoinCard'
 import TestRunner from './components/TestRunner'
 import ResultCard from './components/ResultCard'
+import AdminPanel from './components/AdminPanel'
 
 function App() {
   const [screen, setScreen] = useState('join')
@@ -49,8 +50,9 @@ function App() {
             onRetake={handleRetake}
           />
         )}
+        {screen === 'admin' && <AdminPanel />}
       </main>
-      <Footer />
+      <Footer onAdminClick={() => setScreen(screen === 'admin' ? 'join' : 'admin')} screen={screen} />
     </div>
   )
 }
