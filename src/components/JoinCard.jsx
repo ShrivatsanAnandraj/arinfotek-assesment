@@ -38,7 +38,6 @@ export default function JoinCard({ onStart }) {
     <div className="w-full max-w-lg">
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 p-10 md:p-12">
         <div className="text-center mb-8">
-          <img src="/arinfotek_logo.png" alt="AR INFOTEK" className="h-14 mx-auto mb-6" />
           <div className="w-20 h-20 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
             <svg className="w-10 h-10 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
