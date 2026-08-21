@@ -10,6 +10,7 @@ export default function AdminPanel() {
   const [tests, setTests] = useState([]);
   const [selectedTest, setSelectedTest] = useState('all');
   const [loadingScores, setLoadingScores] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const fileInputRef = useRef(null);
 
   const [testTitle, setTestTitle] = useState('');
@@ -131,29 +132,31 @@ export default function AdminPanel() {
           return;
         }
 
-        const requiredCols = ['question', 'optiona', 'optionb', 'optionc', 'optiond'];
+        const requiredCols = ['question', 'optiona', 'optionb', 'optionc', 'optiond', 'correctoption'];
         const firstRow = Object.keys(data[0]).map(k => k.toLowerCase().trim());
 
         for (const col of requiredCols) {
           if (!firstRow.includes(col)) {
-            setMessage('Error: Wrong format. Required columns: Question, OptionA, OptionB, OptionC, OptionD');
+            setMessage('Error: Wrong format. Required columns: question, optiona, optionb, optionc, optiond, correctoption');
             return;
           }
         }
 
-        const qCol = firstRow.find(k => k === 'question');
-        const optCols = ['optiona', 'optionb', 'optionc', 'optiond'].map(c => firstRow.find(k => k === c));
-
         const imported = data.map((row) => {
-          const opts = optCols.map(c => String(row[Object.keys(row).find(k => k.toLowerCase().trim() === c)] || '').trim());
+          const keys = Object.keys(row);
+          const getCol = (name) => keys.find(k => k.toLowerCase().trim() === name);
+          const opts = ['optiona', 'optionb', 'optionc', 'optiond'].map(c => String(row[getCol(c)] || '').trim());
+          const correct = String(row[getCol('correctoption')] || '').trim().toUpperCase();
+          const correctIndex = ['A', 'B', 'C', 'D'].indexOf(correct);
           return {
-            question_text: String(row[Object.keys(row).find(k => k.toLowerCase().trim() === qCol)] || '').trim(),
+            question_text: String(row[getCol('question')] || '').trim(),
             options: opts,
-            correct_answer: 0,
+            correct_answer: correctIndex >= 0 ? correctIndex : 0,
           };
         });
 
         setQuestions(imported);
+        setShowImportModal(false);
         setMessage(`Imported ${imported.length} questions from Excel.`);
       } catch {
         setMessage('Error: Failed to parse Excel file. Check the format.');
@@ -161,6 +164,16 @@ export default function AdminPanel() {
     };
     reader.readAsBinaryString(file);
     e.target.value = '';
+  };
+
+  const downloadTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([
+      { question: 'What is 2 + 2?', optiona: '3', optionb: '4', optionc: '5', optiond: '6', correctoption: 'B' },
+      { question: 'Capital of France?', optiona: 'London', optionb: 'Berlin', optionc: 'Paris', optiond: 'Madrid', correctoption: 'C' },
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Questions');
+    XLSX.writeFile(wb, 'arinfotek-question-template.xlsx');
   };
 
   const getFilteredScores = () => {
@@ -253,19 +266,25 @@ export default function AdminPanel() {
                 <div className="absolute right-0 top-12 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-56 z-10">
                   <button
                     onClick={() => { setView('create'); setMenuOpen(false); }}
-                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary hover:bg-slate-50 transition"
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary transition-colors duration-200"
+                    onMouseEnter={(e) => e.target.style.color = '#1e5aa8'}
+                    onMouseLeave={(e) => e.target.style.color = ''}
                   >
                     Create Test
                   </button>
                   <button
-                    onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }}
-                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary hover:bg-slate-50 transition"
+                    onClick={() => { setShowImportModal(true); setMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary transition-colors duration-200"
+                    onMouseEnter={(e) => e.target.style.color = '#1e5aa8'}
+                    onMouseLeave={(e) => e.target.style.color = ''}
                   >
                     Import Questions from Excel
                   </button>
                   <button
                     onClick={() => { setView('scores'); setMenuOpen(false); }}
-                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary hover:bg-slate-50 transition"
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary transition-colors duration-200"
+                    onMouseEnter={(e) => e.target.style.color = '#1e5aa8'}
+                    onMouseLeave={(e) => e.target.style.color = ''}
                   >
                     View Scores
                   </button>
@@ -493,6 +512,48 @@ export default function AdminPanel() {
           </div>
         )}
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        onChange={handleExcelImport}
+        className="hidden"
+      />
+
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
+            <div className="w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-black text-slate-800 mb-2">Import Questions</h3>
+            <p className="text-sm text-slate-500 mb-6">Upload an Excel file or download the template first</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="flex-1 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={downloadTemplate}
+                className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
+              >
+                Download Template
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white shadow-md transition"
+              >
+                Upload File
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

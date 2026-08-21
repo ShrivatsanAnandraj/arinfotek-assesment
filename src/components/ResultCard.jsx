@@ -19,7 +19,7 @@ export default function ResultCard({ result, studentInfo, testName, onRetake }) 
           body: JSON.stringify({
             testId: result.testId,
             studentName: result.studentName,
-            studentEmail: result.studentEmail,
+            studentRegisterId: result.studentRegisterId,
             answers: result.answers,
           }),
         });
