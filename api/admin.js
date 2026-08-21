@@ -13,34 +13,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const schema = `
-      CREATE TABLE IF NOT EXISTS tests (
-        id SERIAL PRIMARY KEY,
-        title TEXT NOT NULL,
-        subject TEXT NOT NULL DEFAULT 'General',
-        test_code TEXT UNIQUE NOT NULL,
-        duration_minutes INT NOT NULL DEFAULT 30
-      );
-      CREATE TABLE IF NOT EXISTS questions (
-        id SERIAL PRIMARY KEY,
-        test_id INT REFERENCES tests(id) ON DELETE CASCADE,
-        question_text TEXT NOT NULL,
-        options JSONB NOT NULL,
-        correct_answer INT NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS attempts (
-        id SERIAL PRIMARY KEY,
-        test_id INT REFERENCES tests(id),
-        student_name TEXT NOT NULL,
-        student_email TEXT NOT NULL,
-        score INT NOT NULL,
-        total INT NOT NULL,
-        answers JSONB NOT NULL,
-        submitted_at TIMESTAMPTZ DEFAULT NOW()
-      );
-    `;
-    await sql(schema);
-
     const existing = await sql('SELECT id FROM tests WHERE test_code = $1', [test_code.toUpperCase()]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'Test code already exists' });
