@@ -167,8 +167,17 @@ export default function AdminPanel() {
   };
 
   const downloadTemplate = () => {
-    const ws = XLSX.utils.json_to_sheet([]);
-    XLSX.utils.sheet_add_aoa(ws, [['question', 'optiona', 'optionb', 'optionc', 'optiond', 'correctoption']]);
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['question', 'optiona', 'optionb', 'optionc', 'optiond', 'correctoption'],
+    ]);
+    ws['!cols'] = [
+      { wch: 40 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 15 },
+    ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Questions');
     XLSX.writeFile(wb, 'arinfotek-question-template.xlsx');
