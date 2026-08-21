@@ -7,9 +7,9 @@ export default async function handler(req, res) {
 
   try {
     const sql = neon(process.env.DATABASE_URL);
-    const { testId, studentName, studentEmail, answers } = req.body;
+    const { testId, studentName, studentRegisterId, answers } = req.body;
 
-    if (!testId || !studentName || !studentEmail || !answers) {
+    if (!testId || !studentName || !studentRegisterId || !answers) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -31,8 +31,8 @@ export default async function handler(req, res) {
     const passed = percentage >= 40;
 
     await sql(
-      'INSERT INTO attempts (test_id, student_name, student_email, score, total, answers) VALUES ($1, $2, $3, $4, $5, $6)',
-      [testId, studentName, studentEmail, score, total, JSON.stringify(answers)]
+      'INSERT INTO attempts (test_id, student_name, student_register_id, score, total, answers) VALUES ($1, $2, $3, $4, $5, $6)',
+      [testId, studentName, studentRegisterId, score, total, JSON.stringify(answers)]
     );
 
     const reviewRows = await sql(

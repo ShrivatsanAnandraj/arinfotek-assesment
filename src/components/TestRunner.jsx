@@ -8,7 +8,6 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
   const [answers, setAnswers] = useState({});
   const [secondsLeft, setSecondsLeft] = useState(test.duration_minutes * 60);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [reviewMode, setReviewMode] = useState(false);
   const [shuffled, setShuffled] = useState([]);
 
   useEffect(() => {
@@ -36,23 +35,21 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
       answers,
       testId: test.id,
       studentName: studentInfo.name,
-      studentEmail: studentInfo.email,
+      studentRegisterId: studentInfo.registerId,
       _raw: true,
     });
   }, [answers, total, test.id, studentInfo, onSubmit]);
 
   useEffect(() => {
-    if (reviewMode) return;
     if (secondsLeft <= 0) {
       submitTest();
       return;
     }
     const timer = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearInterval(timer);
-  }, [secondsLeft, submitTest, reviewMode]);
+  }, [secondsLeft, submitTest]);
 
   const selectAnswer = (questionId, originalOptionIndex) => {
-    if (reviewMode) return;
     setAnswers((prev) => ({ ...prev, [questionId]: originalOptionIndex }));
   };
 
@@ -73,36 +70,27 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-        {/* Top bar */}
         <div className="bg-primary px-6 py-3 flex items-center justify-between text-white">
-          <div className="flex items-center gap-3">
-            <div className="font-bold text-sm">{test.title}</div>
-            {reviewMode && (
-              <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">REVIEW MODE</span>
-            )}
-          </div>
+          <div className="font-bold text-sm">{test.title}</div>
           <div className="flex items-center gap-4">
             <span className="text-xs text-slate-200">
               {answeredCount}/{total} answered
             </span>
-            {!reviewMode && (
-              <div
-                className={`font-mono font-bold text-lg px-3 py-1 rounded-lg ${
-                  secondsLeft <= 60
-                    ? 'bg-red-500 animate-pulse'
-                    : secondsLeft <= 300
-                    ? 'bg-yellow-500'
-                    : 'bg-white/20'
-                }`}
-              >
-                {formatTime(secondsLeft)}
-              </div>
-            )}
+            <div
+              className={`font-mono font-bold text-lg px-3 py-1 rounded-lg ${
+                secondsLeft <= 60
+                  ? 'bg-red-500 animate-pulse'
+                  : secondsLeft <= 300
+                  ? 'bg-yellow-500'
+                  : 'bg-white/20'
+              }`}
+            >
+              {formatTime(secondsLeft)}
+            </div>
           </div>
         </div>
 
         <div className="p-6 md:p-8">
-          {/* Progress */}
           <div className="w-full bg-slate-100 rounded-full h-2 mb-6">
             <div
               className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all"
@@ -110,7 +98,6 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
             />
           </div>
 
-          {/* Question */}
           <div className="mb-8">
             <div className="flex items-start gap-3 mb-6">
               <span className="bg-primary text-white text-sm font-bold rounded-lg px-3 py-1 shrink-0">
@@ -127,15 +114,10 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
                   <button
                     key={i}
                     onClick={() => selectAnswer(current.id, opt.originalIndex)}
-                    disabled={reviewMode}
-                    className={`flex items-center gap-3 px-5 py-3.5 rounded-xl border-2 text-left transition-all ${
-                      reviewMode
-                        ? isSelected
-                          ? 'border-primary bg-primary/10 cursor-default'
-                          : 'border-slate-100 cursor-default opacity-60'
-                        : isSelected
-                        ? 'border-primary bg-primary/5 shadow-sm cursor-pointer'
-                        : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
+                    className={`flex items-center gap-3 px-5 py-3.5 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     <span
@@ -154,68 +136,35 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
             </div>
           </div>
 
-          {/* Navigation */}
-          {!reviewMode && (
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setCurrentIndex((i) => i - 1)}
-                disabled={isFirst}
-                className="px-5 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
-              >
-                Previous
-              </button>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setCurrentIndex((i) => i - 1)}
+              disabled={isFirst}
+              className="px-5 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >
+              Previous
+            </button>
 
-              <div className="flex gap-2">
-                {isLast ? (
-                  <button
-                    onClick={() => setShowConfirm(true)}
-                    className="px-6 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white shadow-md hover:shadow-orange-200 transition"
-                  >
-                    Submit Test
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setCurrentIndex((i) => i + 1)}
-                    className="px-6 py-2.5 rounded-lg font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
-                  >
-                    Next
-                  </button>
-                )}
-              </div>
+            <div className="flex gap-2">
+              {isLast ? (
+                <button
+                  onClick={() => setShowConfirm(true)}
+                  className="px-6 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white shadow-md hover:shadow-orange-200 transition"
+                >
+                  Submit Test
+                </button>
+              ) : (
+                <button
+                  onClick={() => setCurrentIndex((i) => i + 1)}
+                  className="px-6 py-2.5 rounded-lg font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
+                >
+                  Next
+                </button>
+              )}
             </div>
-          )}
-
-          {reviewMode && (
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-                disabled={isFirst}
-                className="px-5 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
-              >
-                Previous
-              </button>
-              <div className="flex gap-2">
-                {isLast ? (
-                  <button
-                    onClick={submitTest}
-                    className="px-6 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white shadow-md hover:shadow-orange-200 transition"
-                  >
-                    Submit Now
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setCurrentIndex((i) => i + 1)}
-                    className="px-6 py-2.5 rounded-lg font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
-                  >
-                    Next
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
 
-        {/* Question palette */}
         <div className="border-t border-slate-100 px-6 py-4">
           <div className="text-xs font-bold text-slate-500 mb-2">Question Palette</div>
           <div className="flex flex-wrap gap-2">
@@ -238,7 +187,6 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
         </div>
       </div>
 
-      {/* Confirm modal */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
@@ -259,10 +207,10 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
             {answeredCount === total && <div className="mb-4" />}
             <div className="flex gap-3">
               <button
-                onClick={() => { setShowConfirm(false); setReviewMode(true); }}
+                onClick={() => setShowConfirm(false)}
                 className="flex-1 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition"
               >
-                No, Review
+                No
               </button>
               <button
                 onClick={submitTest}

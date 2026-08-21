@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 export default function JoinCard({ onStart }) {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [registerId, setRegisterId] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -11,7 +11,7 @@ export default function JoinCard({ onStart }) {
     e.preventDefault();
     setError('');
 
-    if (!name.trim() || !email.trim() || !code.trim()) {
+    if (!name.trim() || !registerId.trim() || !code.trim()) {
       setError('Please fill in all fields.');
       return;
     }
@@ -26,7 +26,7 @@ export default function JoinCard({ onStart }) {
         return;
       }
       const data = await res.json();
-      onStart({ student: { name: name.trim(), email: email.trim() }, test: data });
+      onStart({ student: { name: name.trim(), registerId: registerId.trim() }, test: data });
     } catch {
       setError('Failed to connect. Please try again.');
     } finally {
@@ -60,12 +60,12 @@ export default function JoinCard({ onStart }) {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-600 mb-2">Email Address</label>
+            <label className="block text-sm font-bold text-slate-600 mb-2">Register ID <span className="text-slate-400 font-normal">(as per college records)</span></label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              type="text"
+              value={registerId}
+              onChange={(e) => setRegisterId(e.target.value)}
+              placeholder="Enter your register ID"
               className="w-full px-5 py-3.5 rounded-xl border border-slate-200 text-base focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
             />
           </div>

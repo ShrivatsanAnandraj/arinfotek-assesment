@@ -1,14 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function AdminPanel() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState('create');
   const [scores, setScores] = useState([]);
   const [tests, setTests] = useState([]);
+  const [selectedTest, setSelectedTest] = useState('all');
   const [loadingScores, setLoadingScores] = useState(false);
+  const fileInputRef = useRef(null);
 
   const [testTitle, setTestTitle] = useState('');
-  const [testSubject, setTestSubject] = useState('');
   const [testCode, setTestCode] = useState('');
   const [testDuration, setTestDuration] = useState(30);
   const [questions, setQuestions] = useState([
@@ -89,7 +93,6 @@ export default function AdminPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: testTitle,
-          subject: testSubject || 'General',
           test_code: testCode.toUpperCase(),
           duration_minutes: Number(testDuration),
           questions,
@@ -99,7 +102,6 @@ export default function AdminPanel() {
       if (res.ok) {
         setMessage(`Success! Test "${testCode.toUpperCase()}" created with ${questions.length} questions.`);
         setTestTitle('');
-        setTestSubject('');
         setTestCode('');
         setTestDuration(30);
         setQuestions([{ question_text: '', options: ['', '', '', ''], correct_answer: 0 }]);
@@ -113,10 +115,121 @@ export default function AdminPanel() {
     }
   };
 
+  const handleExcelImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(evt.target.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws);
+
+        if (data.length === 0) {
+          setMessage('Error: Excel file is empty.');
+          return;
+        }
+
+        const requiredCols = ['question', 'optiona', 'optionb', 'optionc', 'optiond'];
+        const firstRow = Object.keys(data[0]).map(k => k.toLowerCase().trim());
+
+        for (const col of requiredCols) {
+          if (!firstRow.includes(col)) {
+            setMessage('Error: Wrong format. Required columns: Question, OptionA, OptionB, OptionC, OptionD');
+            return;
+          }
+        }
+
+        const qCol = firstRow.find(k => k === 'question');
+        const optCols = ['optiona', 'optionb', 'optionc', 'optiond'].map(c => firstRow.find(k => k === c));
+
+        const imported = data.map((row) => {
+          const opts = optCols.map(c => String(row[Object.keys(row).find(k => k.toLowerCase().trim() === c)] || '').trim());
+          return {
+            question_text: String(row[Object.keys(row).find(k => k.toLowerCase().trim() === qCol)] || '').trim(),
+            options: opts,
+            correct_answer: 0,
+          };
+        });
+
+        setQuestions(imported);
+        setMessage(`Imported ${imported.length} questions from Excel.`);
+      } catch {
+        setMessage('Error: Failed to parse Excel file. Check the format.');
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = '';
+  };
+
+  const getFilteredScores = () => {
+    let filtered = selectedTest === 'all' ? scores : scores.filter(s => s.test_code === selectedTest);
+    return filtered.sort((a, b) => a.student_name.localeCompare(b.student_name));
+  };
+
+  const printScores = () => {
+    const data = getFilteredScores();
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html><head><title>Student Scores</title>
+      <style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#1e5aa8;color:white}tr:nth-child(even){background:#f9f9f9}</style>
+      </head><body>
+      <h2>AR INFOTEK - Student Scores</h2>
+      <p>Test: ${selectedTest === 'all' ? 'All Tests' : selectedTest}</p>
+      <table><thead><tr><th>Name</th><th>Register ID</th><th>Test</th><th>Score</th><th>%</th><th>Date</th></tr></thead><tbody>
+      ${data.map(s => {
+        const pct = Math.round((s.score / s.total) * 100);
+        return `<tr><td>${s.student_name}</td><td>${s.student_register_id}</td><td>${s.test_code}</td><td>${s.score}/${s.total}</td><td>${pct}%</td><td>${new Date(s.submitted_at).toLocaleDateString()}</td></tr>`;
+      }).join('')}
+      </tbody></table></body></html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  const downloadPDF = () => {
+    const data = getFilteredScores();
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('AR INFOTEK - Student Scores', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Test: ${selectedTest === 'all' ? 'All Tests' : selectedTest}`, 14, 22);
+
+    doc.autoTable({
+      startY: 28,
+      head: [['Name', 'Register ID', 'Test', 'Score', '%', 'Date']],
+      body: data.map(s => [
+        s.student_name,
+        s.student_register_id,
+        s.test_code,
+        `${s.score}/${s.total}`,
+        `${Math.round((s.score / s.total) * 100)}%`,
+        new Date(s.submitted_at).toLocaleDateString(),
+      ]),
+    });
+
+    doc.save('student-scores.pdf');
+  };
+
+  const downloadExcel = () => {
+    const data = getFilteredScores();
+    const ws = XLSX.utils.json_to_sheet(data.map(s => ({
+      Name: s.student_name,
+      'Register ID': s.student_register_id,
+      Test: s.test_code,
+      Score: `${s.score}/${s.total}`,
+      Percentage: `${Math.round((s.score / s.total) * 100)}%`,
+      Date: new Date(s.submitted_at).toLocaleDateString(),
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Scores');
+    XLSX.writeFile(wb, 'student-scores.xlsx');
+  };
+
   return (
     <div className="w-full max-w-3xl mx-auto py-10 px-4">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
-        {/* Header with 3-dot menu */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-black text-slate-800">Admin Panel</h1>
@@ -136,12 +249,18 @@ export default function AdminPanel() {
               </svg>
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-12 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-48 z-10">
+              <div className="absolute right-0 top-12 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-56 z-10">
                 <button
                   onClick={() => { setView('create'); setMenuOpen(false); }}
                   className={`w-full text-left px-4 py-2.5 text-sm font-bold transition ${view === 'create' ? 'text-primary bg-primary/5' : 'text-slate-600 hover:bg-slate-50'}`}
                 >
                   Create Test
+                </button>
+                <button
+                  onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
+                >
+                  Import Questions from Excel
                 </button>
                 <button
                   onClick={() => { setView('scores'); setMenuOpen(false); }}
@@ -154,7 +273,14 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* Create Test View */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          onChange={handleExcelImport}
+          className="hidden"
+        />
+
         {view === 'create' && (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-slate-50 rounded-xl p-5 space-y-4">
@@ -188,16 +314,6 @@ export default function AdminPanel() {
                   value={testTitle}
                   onChange={(e) => setTestTitle(e.target.value)}
                   placeholder="e.g. Aptitude Test - Round 1"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Subject</label>
-                <input
-                  type="text"
-                  value={testSubject}
-                  onChange={(e) => setTestSubject(e.target.value)}
-                  placeholder="e.g. General Aptitude"
                   className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
@@ -263,7 +379,7 @@ export default function AdminPanel() {
             </div>
 
             {message && (
-              <div className={`text-sm px-4 py-3 rounded-lg border ${message.startsWith('Success') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>
+              <div className={`text-sm px-4 py-3 rounded-lg border ${message.startsWith('Success') || message.startsWith('Imported') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>
                 {message}
               </div>
             )}
@@ -278,15 +394,35 @@ export default function AdminPanel() {
           </form>
         )}
 
-        {/* Scores View */}
         {view === 'scores' && (
           <div>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-bold text-slate-600">Filter by Test:</label>
+                <select
+                  value={selectedTest}
+                  onChange={(e) => setSelectedTest(e.target.value)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value="all">All Tests</option>
+                  {tests.map((t) => (
+                    <option key={t.id} value={t.test_code}>{t.test_code} - {t.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={printScores} className="px-3 py-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Print</button>
+                <button onClick={downloadPDF} className="px-3 py-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Download PDF</button>
+                <button onClick={downloadExcel} className="px-3 py-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Download Excel</button>
+              </div>
+            </div>
+
             {loadingScores ? (
               <div className="text-center py-10">
                 <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
                 <p className="text-sm text-slate-500 mt-3">Loading...</p>
               </div>
-            ) : scores.length === 0 ? (
+            ) : getFilteredScores().length === 0 ? (
               <div className="text-center py-10 text-slate-500">
                 <p className="text-sm">No submissions yet.</p>
               </div>
@@ -296,7 +432,7 @@ export default function AdminPanel() {
                   <thead>
                     <tr className="border-b border-slate-200">
                       <th className="text-left py-3 px-2 font-bold text-slate-600">Name</th>
-                      <th className="text-left py-3 px-2 font-bold text-slate-600">Email</th>
+                      <th className="text-left py-3 px-2 font-bold text-slate-600">Register ID</th>
                       <th className="text-left py-3 px-2 font-bold text-slate-600">Test</th>
                       <th className="text-center py-3 px-2 font-bold text-slate-600">Score</th>
                       <th className="text-center py-3 px-2 font-bold text-slate-600">%</th>
@@ -304,12 +440,12 @@ export default function AdminPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {scores.map((s) => {
+                    {getFilteredScores().map((s) => {
                       const pct = Math.round((s.score / s.total) * 100);
                       return (
                         <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50">
                           <td className="py-3 px-2 font-bold text-slate-800">{s.student_name}</td>
-                          <td className="py-3 px-2 text-slate-600">{s.student_email}</td>
+                          <td className="py-3 px-2 text-slate-600">{s.student_register_id}</td>
                           <td className="py-3 px-2 text-slate-600">{s.test_code}</td>
                           <td className="py-3 px-2 text-center font-bold text-primary">{s.score}/{s.total}</td>
                           <td className="py-3 px-2 text-center">

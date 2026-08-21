@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS attempts (
   id SERIAL PRIMARY KEY,
   test_id INT REFERENCES tests(id),
   student_name TEXT NOT NULL,
-  student_email TEXT NOT NULL,
+  student_register_id TEXT NOT NULL,
   score INT NOT NULL,
   total INT NOT NULL,
   answers JSONB NOT NULL,

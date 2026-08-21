@@ -8,10 +8,10 @@ export default async function handler(req, res) {
   try {
     const sql = neon(process.env.DATABASE_URL);
 
-    const tests = await sql('SELECT id, title, test_code, subject, duration_minutes FROM tests ORDER BY id');
+    const tests = await sql('SELECT id, title, test_code, duration_minutes FROM tests ORDER BY id');
 
     const attempts = await sql(`
-      SELECT a.id, a.student_name, a.student_email, a.score, a.total, a.submitted_at,
+      SELECT a.id, a.student_name, a.student_register_id, a.score, a.total, a.submitted_at,
              t.title as test_title, t.test_code
       FROM attempts a
       JOIN tests t ON a.test_id = t.id
