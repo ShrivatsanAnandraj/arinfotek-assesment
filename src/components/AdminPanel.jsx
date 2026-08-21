@@ -253,19 +253,19 @@ export default function AdminPanel() {
                 <div className="absolute right-0 top-12 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-56 z-10">
                   <button
                     onClick={() => { setView('create'); setMenuOpen(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm font-bold transition ${view === 'create' ? 'text-primary bg-primary/5' : 'text-slate-600 hover:bg-slate-50'}`}
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary hover:bg-slate-50 transition"
                   >
                     Create Test
                   </button>
                   <button
                     onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }}
-                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary hover:bg-slate-50 transition"
                   >
                     Import Questions from Excel
                   </button>
                   <button
                     onClick={() => { setView('scores'); setMenuOpen(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm font-bold transition ${view === 'scores' ? 'text-primary bg-primary/5' : 'text-slate-600 hover:bg-slate-50'}`}
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary hover:bg-slate-50 transition"
                   >
                     View Scores
                   </button>
