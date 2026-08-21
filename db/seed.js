@@ -1,24 +1,51 @@
 import { neon } from '@neondatabase/serverless';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const sql = neon(process.env.DATABASE_URL);
 
 async function seed() {
-  const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf-8');
-  await sql`${schema}`;
+  await sql(`
+    CREATE TABLE IF NOT EXISTS tests (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      subject TEXT NOT NULL DEFAULT 'General',
+      test_code TEXT UNIQUE NOT NULL,
+      duration_minutes INT NOT NULL DEFAULT 30
+    )
+  `);
 
-  await sql`DELETE FROM questions`;
-  await sql`DELETE FROM attempts`;
-  await sql`DELETE FROM tests`;
+  await sql(`
+    CREATE TABLE IF NOT EXISTS questions (
+      id SERIAL PRIMARY KEY,
+      test_id INT REFERENCES tests(id) ON DELETE CASCADE,
+      question_text TEXT NOT NULL,
+      options JSONB NOT NULL,
+      correct_answer INT NOT NULL
+    )
+  `);
 
-  const [test] = await sql`
-    INSERT INTO tests (title, subject, test_code, duration_minutes)
-    VALUES ('Aptitude Test - Round 1', 'General Aptitude', 'APT01', 30)
-    RETURNING id
-  `;
+  await sql(`
+    CREATE TABLE IF NOT EXISTS attempts (
+      id SERIAL PRIMARY KEY,
+      test_id INT REFERENCES tests(id),
+      student_name TEXT NOT NULL,
+      student_email TEXT NOT NULL,
+      score INT NOT NULL,
+      total INT NOT NULL,
+      answers JSONB NOT NULL,
+      submitted_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  await sql('DELETE FROM questions');
+  await sql('DELETE FROM attempts');
+  await sql('DELETE FROM tests');
+
+  const testResult = await sql(
+    `INSERT INTO tests (title, subject, test_code, duration_minutes)
+     VALUES ('Aptitude Test - Round 1', 'General Aptitude', 'APT01', 30)
+     RETURNING id`
+  );
+  const testId = testResult[0].id;
 
   const questions = [
     { q: 'What is 15% of 200?', opts: ['25', '30', '35', '40'], ans: 1 },
@@ -39,10 +66,11 @@ async function seed() {
   ];
 
   for (const item of questions) {
-    await sql`
-      INSERT INTO questions (test_id, question_text, options, correct_answer)
-      VALUES (${test.id}, ${item.q}, ${JSON.stringify(item.opts)}, ${item.ans})
-    `;
+    await sql(
+      `INSERT INTO questions (test_id, question_text, options, correct_answer)
+       VALUES ($1, $2, $3, $4)`,
+      [testId, item.q, JSON.stringify(item.opts), item.ans]
+    );
   }
 
   console.log(`Seeded test "APT01" with ${questions.length} questions.`);
