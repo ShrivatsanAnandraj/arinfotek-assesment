@@ -167,10 +167,8 @@ export default function AdminPanel() {
   };
 
   const downloadTemplate = () => {
-    const ws = XLSX.utils.json_to_sheet([
-      { question: 'What is 2 + 2?', optiona: '3', optionb: '4', optionc: '5', optiond: '6', correctoption: 'B' },
-      { question: 'Capital of France?', optiona: 'London', optionb: 'Berlin', optionc: 'Paris', optiond: 'Madrid', correctoption: 'C' },
-    ]);
+    const ws = XLSX.utils.json_to_sheet([]);
+    XLSX.utils.sheet_add_aoa(ws, [['question', 'optiona', 'optionb', 'optionc', 'optiond', 'correctoption']]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Questions');
     XLSX.writeFile(wb, 'arinfotek-question-template.xlsx');
