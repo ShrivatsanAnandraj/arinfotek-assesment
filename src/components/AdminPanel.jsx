@@ -232,48 +232,94 @@ export default function AdminPanel() {
   return (
     <div className="w-full max-w-3xl mx-auto py-10 px-4">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800">Admin Panel</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              {view === 'create' ? 'Create tests and add questions' : 'View student scores'}
-            </p>
+        {view === 'create' && (
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-2xl font-black text-slate-800">Admin Panel</h1>
+              <p className="text-sm text-slate-500 mt-1">Create tests and add questions</p>
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-2 rounded-lg hover:bg-slate-100 transition text-slate-600"
+              >
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="5" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="12" cy="19" r="2" />
+                </svg>
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-12 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-56 z-10">
+                  <button
+                    onClick={() => { setView('create'); setMenuOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm font-bold transition ${view === 'create' ? 'text-primary bg-primary/5' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    Create Test
+                  </button>
+                  <button
+                    onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
+                  >
+                    Import Questions from Excel
+                  </button>
+                  <button
+                    onClick={() => { setView('scores'); setMenuOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm font-bold transition ${view === 'scores' ? 'text-primary bg-primary/5' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    View Scores
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="p-2 rounded-lg hover:bg-slate-100 transition text-slate-600"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <circle cx="12" cy="5" r="2" />
-                <circle cx="12" cy="12" r="2" />
-                <circle cx="12" cy="19" r="2" />
-              </svg>
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 top-12 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-56 z-10">
-                <button
-                  onClick={() => { setView('create'); setMenuOpen(false); }}
-                  className={`w-full text-left px-4 py-2.5 text-sm font-bold transition ${view === 'create' ? 'text-primary bg-primary/5' : 'text-slate-600 hover:bg-slate-50'}`}
+        )}
+
+        {view === 'scores' && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => setView('create')}
+                className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-primary transition"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+              <h1 className="text-2xl font-black text-slate-800">Student Scores</h1>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-bold text-slate-600">Filter:</label>
+                <select
+                  value={selectedTest}
+                  onChange={(e) => setSelectedTest(e.target.value)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
-                  Create Test
+                  <option value="all">All Tests</option>
+                  {tests.map((t) => (
+                    <option key={t.id} value={t.test_code}>{t.test_code} - {t.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={printScores} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark transition">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                  Print
                 </button>
-                <button
-                  onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }}
-                  className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
-                >
-                  Import Questions from Excel
+                <button onClick={downloadPDF} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  PDF
                 </button>
-                <button
-                  onClick={() => { setView('scores'); setMenuOpen(false); }}
-                  className={`w-full text-left px-4 py-2.5 text-sm font-bold transition ${view === 'scores' ? 'text-primary bg-primary/5' : 'text-slate-600 hover:bg-slate-50'}`}
-                >
-                  View Scores
+                <button onClick={downloadExcel} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-green-600 text-white hover:bg-green-700 transition">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  Excel
                 </button>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
 
         <input
           ref={fileInputRef}
@@ -398,27 +444,6 @@ export default function AdminPanel() {
 
         {view === 'scores' && (
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-bold text-slate-600">Filter by Test:</label>
-                <select
-                  value={selectedTest}
-                  onChange={(e) => setSelectedTest(e.target.value)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                >
-                  <option value="all">All Tests</option>
-                  {tests.map((t) => (
-                    <option key={t.id} value={t.test_code}>{t.test_code} - {t.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={printScores} className="px-3 py-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Print</button>
-                <button onClick={downloadPDF} className="px-3 py-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Download PDF</button>
-                <button onClick={downloadExcel} className="px-3 py-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Download Excel</button>
-              </div>
-            </div>
-
             {loadingScores ? (
               <div className="text-center py-10">
                 <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />

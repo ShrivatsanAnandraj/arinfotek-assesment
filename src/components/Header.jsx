@@ -8,7 +8,7 @@ const Header = () => {
           <img
             src="/arinfotek_logo.png"
             alt="AR INFOTEK"
-            className="h-9 md:h-11 w-auto object-contain"
+            className="h-11 md:h-14 w-auto object-contain"
           />
         </a>
         <nav className="hidden md:flex items-center gap-1 bg-slate-50 p-1 rounded-full border border-slate-100">
