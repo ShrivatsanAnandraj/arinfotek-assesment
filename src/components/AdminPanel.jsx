@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import jsPDFautotable from 'jspdf-autotable';
 
 export default function AdminPanel() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -194,19 +194,21 @@ export default function AdminPanel() {
     doc.setFontSize(16);
     doc.text('AR INFOTEK - Student Scores', 14, 15);
     doc.setFontSize(10);
-    doc.text(`Test: ${selectedTest === 'all' ? 'All Tests' : selectedTest}`, 14, 22);
+    doc.text('Test: ' + (selectedTest === 'all' ? 'All Tests' : selectedTest), 14, 22);
 
-    doc.autoTable({
+    const tableData = data.map(s => [
+      s.student_name,
+      s.student_register_id,
+      s.test_code,
+      s.score + '/' + s.total,
+      Math.round((s.score / s.total) * 100) + '%',
+      new Date(s.submitted_at).toLocaleDateString(),
+    ]);
+
+    jsPDFautotable(doc, {
       startY: 28,
       head: [['Name', 'Register ID', 'Test', 'Score', '%', 'Date']],
-      body: data.map(s => [
-        s.student_name,
-        s.student_register_id,
-        s.test_code,
-        `${s.score}/${s.total}`,
-        `${Math.round((s.score / s.total) * 100)}%`,
-        new Date(s.submitted_at).toLocaleDateString(),
-      ]),
+      body: tableData,
     });
 
     doc.save('student-scores.pdf');
