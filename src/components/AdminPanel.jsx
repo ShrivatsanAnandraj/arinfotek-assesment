@@ -1,6 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function AdminPanel() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [view, setView] = useState('create');
+  const [scores, setScores] = useState([]);
+  const [tests, setTests] = useState([]);
+  const [loadingScores, setLoadingScores] = useState(false);
+
   const [testTitle, setTestTitle] = useState('');
   const [testSubject, setTestSubject] = useState('');
   const [testCode, setTestCode] = useState('');
@@ -10,6 +16,28 @@ export default function AdminPanel() {
   ]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const fetchScores = async () => {
+    setLoadingScores(true);
+    try {
+      const res = await fetch('/api/scores');
+      const data = await res.json();
+      if (res.ok) {
+        setScores(data.attempts || []);
+        setTests(data.tests || []);
+      }
+    } catch {
+      console.error('Failed to fetch scores');
+    } finally {
+      setLoadingScores(false);
+    }
+  };
+
+  useEffect(() => {
+    if (view === 'scores') {
+      fetchScores();
+    }
+  }, [view]);
 
   const addQuestion = () => {
     setQuestions([...questions, { question_text: '', options: ['', '', '', ''], correct_answer: 0 }]);
@@ -88,133 +116,219 @@ export default function AdminPanel() {
   return (
     <div className="w-full max-w-3xl mx-auto py-10 px-4">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-black text-slate-800">Admin Panel</h1>
-          <p className="text-sm text-slate-500 mt-1">Create tests and add questions</p>
+        {/* Header with 3-dot menu */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-black text-slate-800">Admin Panel</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              {view === 'create' ? 'Create tests and add questions' : 'View student scores'}
+            </p>
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-2 rounded-lg hover:bg-slate-100 transition text-slate-600"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="5" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="12" cy="19" r="2" />
+              </svg>
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-12 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-48 z-10">
+                <button
+                  onClick={() => { setView('create'); setMenuOpen(false); }}
+                  className={`w-full text-left px-4 py-2.5 text-sm font-bold transition ${view === 'create' ? 'text-primary bg-primary/5' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  Create Test
+                </button>
+                <button
+                  onClick={() => { setView('scores'); setMenuOpen(false); }}
+                  className={`w-full text-left px-4 py-2.5 text-sm font-bold transition ${view === 'scores' ? 'text-primary bg-primary/5' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  View Scores
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Test details */}
-          <div className="bg-slate-50 rounded-xl p-5 space-y-4">
-            <h3 className="font-bold text-slate-700">Test Details</h3>
-            <div className="grid grid-cols-2 gap-4">
+        {/* Create Test View */}
+        {view === 'create' && (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="bg-slate-50 rounded-xl p-5 space-y-4">
+              <h3 className="font-bold text-slate-700">Test Details</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Test Code</label>
+                  <input
+                    type="text"
+                    value={testCode}
+                    onChange={(e) => setTestCode(e.target.value)}
+                    placeholder="e.g. APT01"
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Duration (min)</label>
+                  <input
+                    type="number"
+                    value={testDuration}
+                    onChange={(e) => setTestDuration(e.target.value)}
+                    min="1"
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Test Code</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Test Title</label>
                 <input
                   type="text"
-                  value={testCode}
-                  onChange={(e) => setTestCode(e.target.value)}
-                  placeholder="e.g. APT01"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  value={testTitle}
+                  onChange={(e) => setTestTitle(e.target.value)}
+                  placeholder="e.g. Aptitude Test - Round 1"
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Duration (min)</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Subject</label>
                 <input
-                  type="number"
-                  value={testDuration}
-                  onChange={(e) => setTestDuration(e.target.value)}
-                  min="1"
+                  type="text"
+                  value={testSubject}
+                  onChange={(e) => setTestSubject(e.target.value)}
+                  placeholder="e.g. General Aptitude"
                   className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">Test Title</label>
-              <input
-                type="text"
-                value={testTitle}
-                onChange={(e) => setTestTitle(e.target.value)}
-                placeholder="e.g. Aptitude Test - Round 1"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">Subject</label>
-              <input
-                type="text"
-                value={testSubject}
-                onChange={(e) => setTestSubject(e.target.value)}
-                placeholder="e.g. General Aptitude"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
-          </div>
 
-          {/* Questions */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-700">Questions ({questions.length})</h3>
-              <button
-                type="button"
-                onClick={addQuestion}
-                className="px-4 py-2 rounded-lg font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
-              >
-                + Add Question
-              </button>
-            </div>
-
-            {questions.map((q, qi) => (
-              <div key={qi} className="bg-slate-50 rounded-xl p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-primary">Q{qi + 1}</span>
-                  {questions.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeQuestion(qi)}
-                      className="text-red-400 hover:text-red-600 text-sm font-bold"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  value={q.question_text}
-                  onChange={(e) => updateQuestion(qi, 'question_text', e.target.value)}
-                  placeholder="Enter question text"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  {q.options.map((opt, oi) => (
-                    <div key={oi} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={opt}
-                        onChange={(e) => updateOption(qi, oi, e.target.value)}
-                        placeholder={`Option ${String.fromCharCode(65 + oi)}`}
-                        className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                      <input
-                        type="radio"
-                        name={`correct-${qi}`}
-                        checked={q.correct_answer === oi}
-                        onChange={() => updateQuestion(qi, 'correct_answer', oi)}
-                        className="w-4 h-4 accent-green-600"
-                        title="Correct answer"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-slate-400">Select the correct answer with the radio button</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-slate-700">Questions ({questions.length})</h3>
+                <button
+                  type="button"
+                  onClick={addQuestion}
+                  className="px-4 py-2 rounded-lg font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
+                >
+                  + Add Question
+                </button>
               </div>
-            ))}
-          </div>
 
-          {message && (
-            <div className={`text-sm px-4 py-3 rounded-lg border ${message.startsWith('Success') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>
-              {message}
+              {questions.map((q, qi) => (
+                <div key={qi} className="bg-slate-50 rounded-xl p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-primary">Q{qi + 1}</span>
+                    {questions.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeQuestion(qi)}
+                        className="text-red-400 hover:text-red-600 text-sm font-bold"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={q.question_text}
+                    onChange={(e) => updateQuestion(qi, 'question_text', e.target.value)}
+                    placeholder="Enter question text"
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    {q.options.map((opt, oi) => (
+                      <div key={oi} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={opt}
+                          onChange={(e) => updateOption(qi, oi, e.target.value)}
+                          placeholder={`Option ${String.fromCharCode(65 + oi)}`}
+                          className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                        <input
+                          type="radio"
+                          name={`correct-${qi}`}
+                          checked={q.correct_answer === oi}
+                          onChange={() => updateQuestion(qi, 'correct_answer', oi)}
+                          className="w-4 h-4 accent-green-600"
+                          title="Correct answer"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-400">Select the correct answer with the radio button</p>
+                </div>
+              ))}
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 rounded-xl font-bold text-lg bg-gradient-to-r from-accent to-orange-600 text-white shadow-lg hover:shadow-orange-200 transition disabled:opacity-50"
-          >
-            {loading ? 'Creating...' : 'Create Test'}
-          </button>
-        </form>
+            {message && (
+              <div className={`text-sm px-4 py-3 rounded-lg border ${message.startsWith('Success') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                {message}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-xl font-bold text-lg bg-gradient-to-r from-accent to-orange-600 text-white shadow-lg hover:shadow-orange-200 transition disabled:opacity-50"
+            >
+              {loading ? 'Creating...' : 'Create Test'}
+            </button>
+          </form>
+        )}
+
+        {/* Scores View */}
+        {view === 'scores' && (
+          <div>
+            {loadingScores ? (
+              <div className="text-center py-10">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+                <p className="text-sm text-slate-500 mt-3">Loading...</p>
+              </div>
+            ) : scores.length === 0 ? (
+              <div className="text-center py-10 text-slate-500">
+                <p className="text-sm">No submissions yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-3 px-2 font-bold text-slate-600">Name</th>
+                      <th className="text-left py-3 px-2 font-bold text-slate-600">Email</th>
+                      <th className="text-left py-3 px-2 font-bold text-slate-600">Test</th>
+                      <th className="text-center py-3 px-2 font-bold text-slate-600">Score</th>
+                      <th className="text-center py-3 px-2 font-bold text-slate-600">%</th>
+                      <th className="text-left py-3 px-2 font-bold text-slate-600">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scores.map((s) => {
+                      const pct = Math.round((s.score / s.total) * 100);
+                      return (
+                        <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50">
+                          <td className="py-3 px-2 font-bold text-slate-800">{s.student_name}</td>
+                          <td className="py-3 px-2 text-slate-600">{s.student_email}</td>
+                          <td className="py-3 px-2 text-slate-600">{s.test_code}</td>
+                          <td className="py-3 px-2 text-center font-bold text-primary">{s.score}/{s.total}</td>
+                          <td className="py-3 px-2 text-center">
+                            <span className={`font-bold px-2 py-0.5 rounded-full text-xs ${pct >= 40 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                              {pct}%
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 text-slate-500 text-xs">
+                            {new Date(s.submitted_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
