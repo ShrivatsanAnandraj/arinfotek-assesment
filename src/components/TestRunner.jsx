@@ -8,25 +8,6 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
   const [answers, setAnswers] = useState({});
   const [secondsLeft, setSecondsLeft] = useState(test.duration_minutes * 60);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [shuffled, setShuffled] = useState([]);
-
-  useEffect(() => {
-    const indexed = questions.map((q, i) => ({ ...q, origIndex: i }));
-    const optionShuffled = indexed.map((q) => {
-      const opts = [...q.options];
-      const indices = opts.map((_, i) => i);
-      for (let j = indices.length - 1; j > 0; j--) {
-        const k = Math.floor(Math.random() * (j + 1));
-        [indices[j], indices[k]] = [indices[k], indices[j]];
-      }
-      return {
-        ...q,
-        shuffledOptions: indices.map((si) => ({ text: opts[si], originalIndex: si })),
-        shuffleMap: indices,
-      };
-    });
-    setShuffled(optionShuffled);
-  }, [questions]);
 
   const submitTest = useCallback(() => {
     onSubmit({
@@ -49,8 +30,8 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
     return () => clearInterval(timer);
   }, [secondsLeft, submitTest]);
 
-  const selectAnswer = (questionId, originalOptionIndex) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: originalOptionIndex }));
+  const selectAnswer = (questionId, optionIndex) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
   };
 
   const formatTime = (s) => {
@@ -61,9 +42,9 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
 
   const answeredCount = Object.keys(answers).length;
 
-  if (shuffled.length === 0) return null;
+  if (questions.length === 0) return null;
 
-  const current = shuffled[currentIndex];
+  const current = questions[currentIndex];
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === total - 1;
 
@@ -107,13 +88,13 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
             </div>
 
             <div className="grid gap-2 sm:gap-3">
-              {current.shuffledOptions.map((opt, i) => {
-                const isSelected = answers[current.id] === opt.originalIndex;
+              {current.options.map((opt, i) => {
+                const isSelected = answers[current.id] === i;
                 const labels = ['A', 'B', 'C', 'D'];
                 return (
                   <button
                     key={i}
-                    onClick={() => selectAnswer(current.id, opt.originalIndex)}
+                    onClick={() => selectAnswer(current.id, i)}
                     className={`flex items-center gap-2.5 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border-2 text-left transition-all cursor-pointer ${
                       isSelected
                         ? 'border-primary bg-primary/5 shadow-sm'
@@ -168,7 +149,7 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
         <div className="border-t border-slate-100 px-3 sm:px-5 py-2.5 sm:py-3.5">
           <div className="text-[11px] sm:text-xs font-bold text-slate-500 mb-1.5 sm:mb-2">Question Palette</div>
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            {shuffled.map((q, i) => (
+            {questions.map((q, i) => (
               <button
                 key={q.id}
                 onClick={() => setCurrentIndex(i)}
