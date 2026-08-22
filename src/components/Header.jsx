@@ -3,12 +3,12 @@ import React from 'react';
 const Header = () => {
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-2 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between">
         <a href="/" className="flex items-center hover:opacity-90 transition">
           <img
             src="/arinfotek_logo.png"
             alt="AR INFOTEK"
-            className="h-11 md:h-14 w-auto object-contain"
+            className="h-8 sm:h-10 md:h-12 w-auto object-contain"
           />
         </a>
         <nav className="hidden md:flex items-center gap-1 bg-slate-50 p-1 rounded-full border border-slate-100">

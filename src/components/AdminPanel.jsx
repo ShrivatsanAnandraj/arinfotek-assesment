@@ -250,8 +250,8 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto py-10 px-4">
-      <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
+    <div className="w-full max-w-3xl mx-auto py-0 md:py-8">
+      <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-3.5 sm:p-5 md:p-7">
         {view === 'create' && (
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -315,13 +315,13 @@ export default function AdminPanel() {
               </button>
               <h1 className="text-2xl font-black text-slate-800">Student Scores</h1>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <label className="text-sm font-bold text-slate-600">Filter:</label>
                 <select
                   value={selectedTest}
                   onChange={(e) => setSelectedTest(e.target.value)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="px-3 sm:px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 max-w-[60vw] sm:max-w-none"
                 >
                   <option value="all">All Tests</option>
                   {tests.map((t) => (
@@ -329,7 +329,7 @@ export default function AdminPanel() {
                   ))}
                 </select>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button onClick={printScores} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark transition">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                   Print
@@ -356,10 +356,10 @@ export default function AdminPanel() {
         />
 
         {view === 'create' && (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="bg-slate-50 rounded-xl p-5 space-y-4">
-              <h3 className="font-bold text-slate-700">Test Details</h3>
-              <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+            <div className="bg-slate-50 rounded-xl p-3.5 sm:p-5 space-y-3 sm:space-y-4">
+              <h3 className="font-bold text-sm sm:text-base text-slate-700">Test Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">Test Code</label>
                   <input
@@ -377,7 +377,7 @@ export default function AdminPanel() {
                     value={testDuration}
                     onChange={(e) => setTestDuration(e.target.value)}
                     min="1"
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
               </div>
@@ -388,25 +388,25 @@ export default function AdminPanel() {
                   value={testTitle}
                   onChange={(e) => setTestTitle(e.target.value)}
                   placeholder="e.g. Aptitude Test - Round 1"
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-slate-700">Questions ({questions.length})</h3>
+                <h3 className="font-bold text-sm sm:text-base text-slate-700">Questions ({questions.length})</h3>
                 <button
                   type="button"
                   onClick={addQuestion}
-                  className="px-4 py-2 rounded-lg font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm bg-primary text-white hover:bg-primary-dark transition"
                 >
                   + Add Question
                 </button>
               </div>
 
               {questions.map((q, qi) => (
-                <div key={qi} className="bg-slate-50 rounded-xl p-5 space-y-3">
+                <div key={qi} className="bg-slate-50 rounded-xl p-3.5 sm:p-5 space-y-2.5 sm:space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sm text-primary">Q{qi + 1}</span>
                     {questions.length > 1 && (
@@ -424,9 +424,9 @@ export default function AdminPanel() {
                     value={q.question_text}
                     onChange={(e) => updateQuestion(qi, 'question_text', e.target.value)}
                     placeholder="Enter question text"
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {q.options.map((opt, oi) => (
                       <div key={oi} className="flex items-center gap-2">
                         <input
@@ -461,7 +461,7 @@ export default function AdminPanel() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-xl font-bold text-lg bg-gradient-to-r from-accent to-orange-600 text-white shadow-lg hover:shadow-orange-200 transition disabled:opacity-50"
+              className="w-full py-3 sm:py-3.5 rounded-xl font-bold text-base sm:text-lg bg-gradient-to-r from-accent to-orange-600 text-white shadow-lg hover:shadow-orange-200 transition disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create Test'}
             </button>
@@ -481,15 +481,15 @@ export default function AdminPanel() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-xs sm:text-sm">
                   <thead>
                     <tr className="border-b border-slate-200">
-                      <th className="text-left py-3 px-2 font-bold text-slate-600">Name</th>
-                      <th className="text-left py-3 px-2 font-bold text-slate-600">Register ID</th>
-                      <th className="text-left py-3 px-2 font-bold text-slate-600">Test</th>
-                      <th className="text-center py-3 px-2 font-bold text-slate-600">Score</th>
-                      <th className="text-center py-3 px-2 font-bold text-slate-600">%</th>
-                      <th className="text-left py-3 px-2 font-bold text-slate-600">Date</th>
+                      <th className="text-left py-2 sm:py-3 px-1.5 sm:px-2 font-bold text-slate-600">Name</th>
+                      <th className="text-left py-2 sm:py-3 px-1.5 sm:px-2 font-bold text-slate-600">Register ID</th>
+                      <th className="text-left py-2 sm:py-3 px-1.5 sm:px-2 font-bold text-slate-600">Test</th>
+                      <th className="text-center py-2 sm:py-3 px-1.5 sm:px-2 font-bold text-slate-600">Score</th>
+                      <th className="text-center py-2 sm:py-3 px-1.5 sm:px-2 font-bold text-slate-600">%</th>
+                      <th className="text-left py-2 sm:py-3 px-1.5 sm:px-2 font-bold text-slate-600">Date</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -497,16 +497,16 @@ export default function AdminPanel() {
                       const pct = Math.round((s.score / s.total) * 100);
                       return (
                         <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50">
-                          <td className="py-3 px-2 font-bold text-slate-800">{s.student_name}</td>
-                          <td className="py-3 px-2 text-slate-600">{s.student_register_id}</td>
-                          <td className="py-3 px-2 text-slate-600">{s.test_code}</td>
-                          <td className="py-3 px-2 text-center font-bold text-primary">{s.score}/{s.total}</td>
-                          <td className="py-3 px-2 text-center">
-                            <span className={`font-bold px-2 py-0.5 rounded-full text-xs ${pct >= 40 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                          <td className="py-2 sm:py-3 px-1.5 sm:px-2 font-bold text-slate-800">{s.student_name}</td>
+                          <td className="py-2 sm:py-3 px-1.5 sm:px-2 text-slate-600">{s.student_register_id}</td>
+                          <td className="py-2 sm:py-3 px-1.5 sm:px-2 text-slate-600">{s.test_code}</td>
+                          <td className="py-2 sm:py-3 px-1.5 sm:px-2 text-center font-bold text-primary">{s.score}/{s.total}</td>
+                          <td className="py-2 sm:py-3 px-1.5 sm:px-2 text-center">
+                            <span className={`font-bold px-2 py-0.5 rounded-full text-[11px] sm:text-xs ${pct >= 40 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
                               {pct}%
                             </span>
                           </td>
-                          <td className="py-3 px-2 text-slate-500 text-xs">
+                          <td className="py-2 sm:py-3 px-1.5 sm:px-2 text-slate-500 text-[11px] sm:text-xs">
                             {new Date(s.submitted_at).toLocaleDateString()}
                           </td>
                         </tr>
@@ -528,17 +528,17 @@ export default function AdminPanel() {
         className="hidden"
       />
 
-      {showImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
-            <div className="w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-black text-slate-800 mb-2">Import Questions</h3>
-            <p className="text-sm text-slate-500 mb-6">Upload an Excel file or download the template first</p>
-            <div className="flex gap-3">
+        {showImportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 max-w-sm w-full mx-auto my-auto text-center">
+              <div className="w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-7 h-7 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-black text-slate-800 mb-2">Import Questions</h3>
+              <p className="text-sm text-slate-500 mb-6">Upload an Excel file or download the template first</p>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={() => setShowImportModal(false)}
                 className="flex-1 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition"

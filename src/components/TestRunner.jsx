@@ -70,14 +70,14 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-        <div className="bg-primary px-6 py-3 flex items-center justify-between text-white">
-          <div className="font-bold text-sm">{test.title}</div>
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-slate-200">
+        <div className="bg-primary px-3 sm:px-5 py-2 flex items-center justify-between gap-2 text-white">
+          <div className="font-bold text-[11px] sm:text-sm truncate">{test.title}</div>
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <span className="text-[11px] sm:text-xs text-slate-200 whitespace-nowrap">
               {answeredCount}/{total} answered
             </span>
             <div
-              className={`font-mono font-bold text-lg px-3 py-1 rounded-lg ${
+              className={`font-mono font-bold text-xs sm:text-lg px-2 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-lg ${
                 secondsLeft <= 60
                   ? 'bg-red-500 animate-pulse'
                   : secondsLeft <= 300
@@ -90,23 +90,23 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
           </div>
         </div>
 
-        <div className="p-6 md:p-8">
-          <div className="w-full bg-slate-100 rounded-full h-2 mb-6">
+        <div className="p-3 sm:p-5 md:p-7">
+          <div className="w-full bg-slate-100 rounded-full h-1.5 sm:h-2 mb-3 sm:mb-5">
             <div
-              className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all"
+              className="bg-gradient-to-r from-primary to-accent h-1.5 sm:h-2 rounded-full transition-all"
               style={{ width: `${((currentIndex + 1) / total) * 100}%` }}
             />
           </div>
 
-          <div className="mb-8">
-            <div className="flex items-start gap-3 mb-6">
-              <span className="bg-primary text-white text-sm font-bold rounded-lg px-3 py-1 shrink-0">
+          <div className="mb-4 sm:mb-6">
+            <div className="flex items-start gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <span className="bg-primary text-white text-xs sm:text-sm font-bold rounded-lg px-2.5 py-1 shrink-0">
                 Q{currentIndex + 1}
               </span>
-              <h2 className="text-lg font-semibold text-slate-800">{current.question_text}</h2>
+              <h2 className="text-[15px] sm:text-lg font-semibold text-slate-800 leading-snug">{current.question_text}</h2>
             </div>
 
-            <div className="grid gap-3">
+            <div className="grid gap-2 sm:gap-3">
               {current.shuffledOptions.map((opt, i) => {
                 const isSelected = answers[current.id] === opt.originalIndex;
                 const labels = ['A', 'B', 'C', 'D'];
@@ -114,14 +114,14 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
                   <button
                     key={i}
                     onClick={() => selectAnswer(current.id, opt.originalIndex)}
-                    className={`flex items-center gap-3 px-5 py-3.5 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                    className={`flex items-center gap-2.5 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border-2 text-left transition-all cursor-pointer ${
                       isSelected
                         ? 'border-primary bg-primary/5 shadow-sm'
                         : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     <span
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shrink-0 ${
                         isSelected
                           ? 'bg-primary text-white'
                           : 'bg-slate-100 text-slate-500'
@@ -136,11 +136,11 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <button
               onClick={() => setCurrentIndex((i) => i - 1)}
               disabled={isFirst}
-              className="px-5 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              className="px-4 py-2 sm:py-2.5 rounded-lg font-bold text-xs sm:text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
             >
               Previous
             </button>
@@ -149,14 +149,14 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
               {isLast ? (
                 <button
                   onClick={() => setShowConfirm(true)}
-                  className="px-6 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white shadow-md hover:shadow-orange-200 transition"
+                  className="px-5 py-2 sm:py-2.5 rounded-lg font-bold text-xs sm:text-sm bg-gradient-to-r from-accent to-orange-600 text-white shadow-md hover:shadow-orange-200 transition"
                 >
                   Submit Test
                 </button>
               ) : (
                 <button
                   onClick={() => setCurrentIndex((i) => i + 1)}
-                  className="px-6 py-2.5 rounded-lg font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
+                  className="px-5 py-2 sm:py-2.5 rounded-lg font-bold text-xs sm:text-sm bg-primary text-white hover:bg-primary-dark transition"
                 >
                   Next
                 </button>
@@ -165,14 +165,14 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
           </div>
         </div>
 
-        <div className="border-t border-slate-100 px-6 py-4">
-          <div className="text-xs font-bold text-slate-500 mb-2">Question Palette</div>
-          <div className="flex flex-wrap gap-2">
+        <div className="border-t border-slate-100 px-3 sm:px-5 py-2.5 sm:py-3.5">
+          <div className="text-[11px] sm:text-xs font-bold text-slate-500 mb-1.5 sm:mb-2">Question Palette</div>
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {shuffled.map((q, i) => (
               <button
                 key={q.id}
                 onClick={() => setCurrentIndex(i)}
-                className={`w-9 h-9 rounded-lg text-xs font-bold transition ${
+                className={`w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition ${
                   i === currentIndex
                     ? 'bg-primary text-white ring-2 ring-primary/30'
                     : answers[q.id] !== undefined
@@ -188,8 +188,8 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
       </div>
 
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 max-w-sm w-full mx-auto my-auto text-center">
             <div className="w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />

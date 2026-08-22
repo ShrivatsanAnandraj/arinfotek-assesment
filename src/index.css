@@ -6,3 +6,23 @@
   --color-accent: #ff891c;
   --color-accent-dark: #e67a15;
 }
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+@media (max-width: 767px), (max-height: 520px) {
+  html {
+    font-size: 14px;
+  }
+  input,
+  select,
+  textarea,
+  button {
+    font-size: max(1rem, 16px);
+  }
+}

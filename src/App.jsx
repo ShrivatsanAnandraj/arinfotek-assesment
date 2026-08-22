@@ -54,9 +54,9 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-dvh flex flex-col bg-slate-50">
       <Header />
-      <main className="flex-1 flex items-center justify-center px-4 py-10">
+      <main className="flex-1 w-full flex items-center justify-center px-2.5 py-3 sm:px-5 sm:py-5 md:py-8">
         {screen === 'join' && <JoinCard onStart={handleStartTest} />}
         {screen === 'test' && (
           <TestRunner
@@ -78,8 +78,8 @@ function App() {
       <Footer onAdminClick={handleAdminClick} screen={screen} />
 
       {showAdminAuth && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 max-w-sm w-full mx-auto my-auto text-center">
             <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
