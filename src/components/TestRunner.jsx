@@ -110,7 +110,7 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
                     >
                       {labels[i]}
                     </span>
-                    <span className="text-sm text-slate-700">{opt.text}</span>
+                    <span className="text-sm text-slate-700">{opt}</span>
                   </button>
                 );
               })}
