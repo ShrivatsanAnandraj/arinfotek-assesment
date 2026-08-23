@@ -22,6 +22,16 @@ export default function AdminPanel() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [surveyTestCode, setSurveyTestCode] = useState('');
+  const [surveyCourse, setSurveyCourse] = useState('');
+  const [surveyTrainee, setSurveyTrainee] = useState('');
+  const [surveyNoOfDays, setSurveyNoOfDays] = useState('');
+  const [surveyTemplateName, setSurveyTemplateName] = useState('');
+  const [surveyQuestions, setSurveyQuestions] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [surveyMessage, setSurveyMessage] = useState('');
+  const [loadingSurvey, setLoadingSurvey] = useState(false);
+
   const fetchScores = async () => {
     setLoadingScores(true);
     try {
@@ -43,6 +53,74 @@ export default function AdminPanel() {
       fetchScores();
     }
   }, [view]);
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await fetch('/api/surveys');
+      const data = await res.json();
+      if (res.ok) {
+        setTemplates(data.templates || []);
+      }
+    } catch {
+      console.error('Failed to fetch templates');
+    }
+  };
+
+  useEffect(() => {
+    if (view === 'createsurvey') {
+      fetchTemplates();
+    }
+  }, [view]);
+
+  const handleTemplateSelect = (template) => {
+    setSurveyTemplateName(template);
+  };
+
+  const handleSubmitSurvey = async (e) => {
+    e.preventDefault();
+    setSurveyMessage('');
+
+    if (!surveyTestCode || !surveyCourse || !surveyTrainee || !surveyNoOfDays) {
+      setSurveyMessage('Error: All fields are required.');
+      return;
+    }
+
+    if (!surveyTemplateName) {
+      setSurveyMessage('Error: Please select a template.');
+      return;
+    }
+
+    setLoadingSurvey(true);
+    try {
+      const res = await fetch('/api/surveys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          test_code: surveyTestCode,
+          course: surveyCourse,
+          trainee: surveyTrainee,
+          no_of_days: Number(surveyNoOfDays),
+          template_name: surveyTemplateName
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSurveyMessage('Success! Survey created for test code: ' + surveyTestCode.toUpperCase());
+        setSurveyTestCode('');
+        setSurveyCourse('');
+        setSurveyTrainee('');
+        setSurveyNoOfDays('');
+        setSurveyTemplateName('');
+      } else {
+        setSurveyMessage('Error: ' + (data.error || 'Failed to create survey'));
+      }
+    } catch {
+      setSurveyMessage('Error: Failed to connect to server.');
+    } finally {
+      setLoadingSurvey(false);
+    }
+  };
 
   const addQuestion = () => {
     setQuestions([...questions, { question_text: '', options: ['', '', '', ''], correct_answer: 0 }]);
@@ -295,6 +373,14 @@ export default function AdminPanel() {
                   >
                     View Scores
                   </button>
+                  <button
+                    onClick={() => { setView('createsurvey'); setMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary transition-colors duration-200"
+                    onMouseEnter={(e) => e.target.style.color = '#1e5aa8'}
+                    onMouseLeave={(e) => e.target.style.color = ''}
+                  >
+                    Create Survey
+                  </button>
                 </div>
               )}
             </div>
@@ -466,6 +552,119 @@ export default function AdminPanel() {
               {loading ? 'Creating...' : 'Create Test'}
             </button>
           </form>
+        )}
+
+        {view === 'createsurvey' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={() => setView('create')}
+                className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-primary transition"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+              <h1 className="text-2xl font-black text-slate-800">Create Survey</h1>
+            </div>
+
+            <form onSubmit={handleSubmitSurvey} className="space-y-4">
+              <div className="bg-slate-50 rounded-xl p-5 space-y-4">
+                <h3 className="font-bold text-base text-slate-700">Survey Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Test Code</label>
+                    <input
+                      type="text"
+                      value={surveyTestCode}
+                      onChange={(e) => setSurveyTestCode(e.target.value)}
+                      placeholder="e.g. APT01"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Course</label>
+                    <input
+                      type="text"
+                      value={surveyCourse}
+                      onChange={(e) => setSurveyCourse(e.target.value)}
+                      placeholder="e.g. IT Training"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Trainee</label>
+                    <input
+                      type="text"
+                      value={surveyTrainee}
+                      onChange={(e) => setSurveyTrainee(e.target.value)}
+                      placeholder="e.g. John Doe"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">No. of Days</label>
+                    <input
+                      type="number"
+                      value={surveyNoOfDays}
+                      onChange={(e) => setSurveyNoOfDays(e.target.value)}
+                      min="1"
+                      placeholder="e.g. 5"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-2">Select Template</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {templates.map((template) => (
+                      <button
+                        key={template}
+                        type="button"
+                        onClick={() => handleTemplateSelect(template)}
+                        className={`p-3 rounded-xl border-2 text-left transition-all ${
+                          surveyTemplateName === template
+                            ? 'border-primary bg-primary/5 shadow-sm'
+                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            surveyTemplateName === template
+                              ? 'border-primary bg-primary'
+                              : 'border-slate-300'
+                          }`}>
+                            {surveyTemplateName === template && (
+                              <span className="w-2 h-2 bg-white rounded-full" />
+                            )}
+                          </span>
+                          <span className="text-sm font-bold text-slate-700">{template}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {surveyMessage && (
+                <div className={`text-sm px-4 py-3 rounded-lg border ${surveyMessage.startsWith('Success') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                  {surveyMessage}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loadingSurvey}
+                className="w-full py-3.5 rounded-xl font-bold text-lg bg-gradient-to-r from-accent to-orange-600 text-white shadow-lg hover:shadow-orange-200 transition disabled:opacity-50"
+              >
+                {loadingSurvey ? 'Creating...' : 'Create Survey'}
+              </button>
+            </form>
+          </div>
         )}
 
         {view === 'scores' && (

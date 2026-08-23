@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export default function ResultCard({ result, studentInfo, testName, onRetake }) {
+export default function ResultCard({ result, studentInfo, testName, onRetake, testCode, onTakeSurvey }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -144,10 +144,10 @@ export default function ResultCard({ result, studentInfo, testName, onRetake }) 
 
       <div className="text-center">
         <button
-          onClick={onRetake}
+          onClick={() => onTakeSurvey && onTakeSurvey()}
           className="px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg font-bold text-sm sm:text-base bg-gradient-to-r from-accent to-orange-600 text-white shadow-md hover:shadow-orange-200 transition"
         >
-          Take Another Test
+          Take Survey
         </button>
       </div>
     </div>

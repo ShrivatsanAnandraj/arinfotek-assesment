@@ -5,6 +5,7 @@ import JoinCard from './components/JoinCard'
 import TestRunner from './components/TestRunner'
 import ResultCard from './components/ResultCard'
 import AdminPanel from './components/AdminPanel'
+import SurveyTaker from './components/SurveyTaker'
 
 function App() {
   const [screen, setScreen] = useState('join')
@@ -14,6 +15,7 @@ function App() {
   const [showAdminAuth, setShowAdminAuth] = useState(false)
   const [adminPassword, setAdminPassword] = useState('')
   const [adminError, setAdminError] = useState('')
+  const [survey, setSurvey] = useState(null)
 
   const handleStartTest = (data) => {
     setStudentInfo(data.student)
@@ -27,6 +29,29 @@ function App() {
   }
 
   const handleRetake = () => {
+    setScreen('join')
+    setTestData(null)
+    setStudentInfo(null)
+    setResult(null)
+  }
+
+  const handleTakeSurvey = async () => {
+    try {
+      const res = await fetch('/api/surveys?test_code=' + encodeURIComponent(testData?.test?.test_code || ''))
+      const data = await res.json()
+      if (res.ok && data.surveys && data.surveys.length > 0) {
+        setSurvey(data.surveys[0])
+        setScreen('survey')
+      } else {
+        alert('No survey available for this test yet.')
+      }
+    } catch {
+      alert('Failed to load survey. Please try again.')
+    }
+  }
+
+  const handleSurveyComplete = () => {
+    setSurvey(null)
     setScreen('join')
     setTestData(null)
     setStudentInfo(null)
@@ -70,7 +95,17 @@ function App() {
             result={result}
             studentInfo={studentInfo}
             testName={testData?.title}
+            testCode={testData?.test?.test_code}
             onRetake={handleRetake}
+            onTakeSurvey={handleTakeSurvey}
+          />
+        )}
+        {screen === 'survey' && survey && (
+          <SurveyTaker
+            survey={survey}
+            studentInfo={studentInfo}
+            testCode={testData?.test?.test_code}
+            onComplete={handleSurveyComplete}
           />
         )}
         {screen === 'admin' && <AdminPanel />}
