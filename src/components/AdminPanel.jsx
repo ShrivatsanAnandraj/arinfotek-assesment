@@ -292,15 +292,47 @@ export default function AdminPanel() {
     return filtered.sort((a, b) => a.student_name.localeCompare(b.student_name));
   };
 
+  const deleteScore = async (action, id, test_code) => {
+    if (!confirm('Are you sure you want to delete?')) return;
+    try {
+      const res = await fetch('/api/scores', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, id, test_code })
+      });
+      if (res.ok) fetchScores();
+    } catch {
+      alert('Failed to delete');
+    }
+  };
+
+  const deleteFeedback = async (action, id, test_code) => {
+    if (!confirm('Are you sure you want to delete?')) return;
+    try {
+      const res = await fetch('/api/surveys', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, id, test_code })
+      });
+      if (res.ok) fetchFeedback();
+    } catch {
+      alert('Failed to delete');
+    }
+  };
+
+  const getScoresTitle = () => {
+    if (selectedTest === 'all') return 'AR INFOTEK - Assessment';
+    return 'AR INFOTEK - Assessment (' + selectedTest + ')';
+  };
+
   const printScores = () => {
     const data = getFilteredScores();
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
-      <html><head><title>Student Scores</title>
+      <html><head><title>${getScoresTitle()}</title>
       <style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#1e5aa8;color:white}tr:nth-child(even){background:#f9f9f9}</style>
       </head><body>
-      <h2>AR INFOTEK - Student Scores</h2>
-      <p>Test: ${selectedTest === 'all' ? 'All Tests' : selectedTest}</p>
+      <h2>${getScoresTitle()}</h2>
       <table><thead><tr><th>Name</th><th>Register ID</th><th>Test</th><th>Score</th><th>%</th><th>Date</th></tr></thead><tbody>
       ${data.map(s => {
         const pct = Math.round((s.score / s.total) * 100);
@@ -316,9 +348,7 @@ export default function AdminPanel() {
     const data = getFilteredScores();
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text('AR INFOTEK - Student Scores', 14, 15);
-    doc.setFontSize(10);
-    doc.text('Test: ' + (selectedTest === 'all' ? 'All Tests' : selectedTest), 14, 22);
+    doc.text(getScoresTitle(), 14, 15);
 
     const tableData = data.map(s => [
       s.student_name,
@@ -330,7 +360,7 @@ export default function AdminPanel() {
     ]);
 
     jsPDFautotable(doc, {
-      startY: 28,
+      startY: 22,
       head: [['Name', 'Register ID', 'Test', 'Score', '%', 'Date']],
       body: tableData,
     });
@@ -448,6 +478,14 @@ export default function AdminPanel() {
                     <option key={t.id} value={t.test_code}>{t.test_code} - {t.title}</option>
                   ))}
                 </select>
+                {selectedTest !== 'all' && (
+                  <button onClick={() => deleteScore('by_test', null, selectedTest)} className="px-3 py-2 rounded-lg text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition">
+                    Delete All ({selectedTest})
+                  </button>
+                )}
+                <button onClick={() => deleteScore('all')} className="px-3 py-2 rounded-lg text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition">
+                  Delete All Scores
+                </button>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button onClick={printScores} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark transition">
@@ -481,7 +519,7 @@ export default function AdminPanel() {
               </button>
               <h1 className="text-2xl font-black text-slate-800">Survey Feedback</h1>
             </div>
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
               <label className="text-sm font-bold text-slate-600">Select Test Code:</label>
               <select
                 value={selectedFeedbackTest}
@@ -493,6 +531,14 @@ export default function AdminPanel() {
                   <option key={tc} value={tc}>{tc}</option>
                 ))}
               </select>
+              {selectedFeedbackTest !== 'all' && (
+                <button onClick={() => deleteFeedback('by_test', null, selectedFeedbackTest)} className="px-3 py-2 rounded-lg text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition">
+                  Delete All ({selectedFeedbackTest})
+                </button>
+              )}
+              <button onClick={() => deleteFeedback('all')} className="px-3 py-2 rounded-lg text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition">
+                Delete All Feedback
+              </button>
             </div>
             {loadingFeedback ? (
               <div className="text-center py-10">
@@ -533,9 +579,12 @@ export default function AdminPanel() {
                               const ans = resp.answers || {};
                               return (
                                 <div key={resp.id} className="bg-white rounded-lg p-3">
-                                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                                    <span className="text-xs text-slate-500">Template: {resp.template_name}</span>
-                                    <span className="text-[11px] text-slate-400">{new Date(resp.submitted_at).toLocaleDateString()}</span>
+                                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-slate-500">Template: {resp.template_name}</span>
+                                      <span className="text-[11px] text-slate-400">{new Date(resp.submitted_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <button onClick={() => deleteFeedback('single', resp.id)} className="text-red-400 hover:text-red-600 text-xs font-bold">Delete</button>
                                   </div>
                                   <div className="space-y-1.5">
                                     {qList.map((q, i) => (
@@ -816,6 +865,7 @@ export default function AdminPanel() {
                       <th className="text-center py-2 sm:py-3 px-1.5 sm:px-2 font-bold text-slate-600">Score</th>
                       <th className="text-center py-2 sm:py-3 px-1.5 sm:px-2 font-bold text-slate-600">%</th>
                       <th className="text-left py-2 sm:py-3 px-1.5 sm:px-2 font-bold text-slate-600">Date</th>
+                      <th className="text-left py-2 sm:py-3 px-1.5 sm:px-2 font-bold text-slate-600"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -834,6 +884,9 @@ export default function AdminPanel() {
                           </td>
                           <td className="py-2 sm:py-3 px-1.5 sm:px-2 text-slate-500 text-[11px] sm:text-xs">
                             {new Date(s.submitted_at).toLocaleDateString()}
+                          </td>
+                          <td className="py-2 sm:py-3 px-1.5 sm:px-2">
+                            <button onClick={() => deleteScore('single', s.id)} className="text-red-400 hover:text-red-600 text-xs font-bold">Delete</button>
                           </td>
                         </tr>
                       );

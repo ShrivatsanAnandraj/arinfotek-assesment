@@ -145,5 +145,31 @@ export default async function handler(req, res) {
     }
   }
 
+  if (req.method === 'DELETE') {
+    try {
+      const { action, id, test_code } = req.body;
+
+      if (action === 'single' && id) {
+        await sql('DELETE FROM survey_responses WHERE id = $1', [id]);
+        return res.status(200).json({ success: true });
+      }
+
+      if (action === 'by_test' && test_code) {
+        await sql('DELETE FROM survey_responses WHERE test_code = $1', [test_code.toUpperCase()]);
+        return res.status(200).json({ success: true });
+      }
+
+      if (action === 'all') {
+        await sql('DELETE FROM survey_responses');
+        return res.status(200).json({ success: true });
+      }
+
+      return res.status(400).json({ error: 'Invalid action' });
+    } catch (error) {
+      console.error('Error deleting:', error);
+      return res.status(500).json({ error: 'Failed to delete' });
+    }
+  }
+
   return res.status(405).json({ error: 'Method not allowed' });
 }
