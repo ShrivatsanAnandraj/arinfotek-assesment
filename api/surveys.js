@@ -60,11 +60,19 @@ export default async function handler(req, res) {
           'SELECT * FROM surveys WHERE test_code = $1 ORDER BY created_at DESC',
           [test_code.toUpperCase()]
         );
-        return res.status(200).json({ surveys });
+        const parsed = surveys.map(s => ({
+          ...s,
+          questions: typeof s.questions === 'string' ? JSON.parse(s.questions) : s.questions
+        }));
+        return res.status(200).json({ surveys: parsed });
       }
 
       const surveys = await sql('SELECT * FROM surveys ORDER BY created_at DESC');
-      return res.status(200).json({ surveys, templates: Object.keys(TEMPLATES) });
+      const parsedAll = surveys.map(s => ({
+        ...s,
+        questions: typeof s.questions === 'string' ? JSON.parse(s.questions) : s.questions
+      }));
+      return res.status(200).json({ surveys: parsedAll, templates: Object.keys(TEMPLATES) });
     } catch (error) {
       console.error('Error fetching surveys:', error);
       return res.status(500).json({ error: 'Failed to fetch surveys' });

@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const upperCode = code.toUpperCase();
 
     const testResult = await sql(
-      'SELECT id, title, subject, duration_minutes FROM tests WHERE test_code = $1',
+      'SELECT id, title, subject, test_code, duration_minutes FROM tests WHERE test_code = $1',
       [upperCode]
     );
 
