@@ -477,7 +477,7 @@ export default function AdminPanel() {
                   className="px-3 sm:px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 max-w-[60vw] sm:max-w-none"
                 >
                   <option value="all">All Tests</option>
-                  {tests.map((t) => (
+                  {tests.filter(t => scores.some(s => s.test_code === t.test_code)).map((t) => (
                     <option key={t.id} value={t.test_code}>{t.test_code} - {t.title}</option>
                   ))}
                 </select>
