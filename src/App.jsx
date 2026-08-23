@@ -20,7 +20,11 @@ function App() {
   const handleStartTest = (data) => {
     setStudentInfo(data.student)
     setTestData(data.test)
-    setScreen('test')
+    if (data.action === 'survey') {
+      handleTakeSurveyDirect(data.test?.test_code)
+    } else {
+      setScreen('test')
+    }
   }
 
   const handleSubmitTest = (resultData) => {
@@ -35,19 +39,29 @@ function App() {
     setResult(null)
   }
 
-  const handleTakeSurvey = async () => {
+  const handleTakeSurveyDirect = async (testCode) => {
     try {
-      const res = await fetch('/api/surveys?test_code=' + encodeURIComponent(testData?.test?.test_code || ''))
+      const res = await fetch('/api/surveys?test_code=' + encodeURIComponent(testCode || ''))
       const data = await res.json()
       if (res.ok && data.surveys && data.surveys.length > 0) {
         setSurvey(data.surveys[0])
         setScreen('survey')
       } else {
         alert('No survey available for this test yet.')
+        setScreen('join')
+        setTestData(null)
+        setStudentInfo(null)
       }
     } catch {
       alert('Failed to load survey. Please try again.')
+      setScreen('join')
+      setTestData(null)
+      setStudentInfo(null)
     }
+  }
+
+  const handleTakeSurvey = async () => {
+    await handleTakeSurveyDirect(testData?.test?.test_code)
   }
 
   const handleSurveyComplete = () => {

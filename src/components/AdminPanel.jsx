@@ -36,6 +36,9 @@ export default function AdminPanel() {
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [selectedFeedbackTest, setSelectedFeedbackTest] = useState('all');
   const [expandedStudent, setExpandedStudent] = useState(null);
+  const [showSurveyReport, setShowSurveyReport] = useState(false);
+  const [reportTestCode, setReportTestCode] = useState('');
+  const [reportData, setReportData] = useState(null);
 
   const fetchScores = async () => {
     setLoadingScores(true);
@@ -509,7 +512,7 @@ export default function AdminPanel() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <button
-                onClick={() => { setView('create'); setSelectedFeedbackTest('all'); setExpandedStudent(null); }}
+                onClick={() => { setView('create'); setSelectedFeedbackTest('all'); setExpandedStudent(null); setShowSurveyReport(false); setReportData(null); }}
                 className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-primary transition"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -518,7 +521,87 @@ export default function AdminPanel() {
                 Back
               </button>
               <h1 className="text-2xl font-black text-slate-800">Survey Feedback</h1>
+              <button
+                onClick={() => setShowSurveyReport(!showSurveyReport)}
+                className="px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark transition"
+              >
+                {showSurveyReport ? 'Close Report' : 'Survey Report'}
+              </button>
             </div>
+
+            {showSurveyReport && (
+              <div className="bg-slate-50 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={reportTestCode}
+                    onChange={(e) => setReportTestCode(e.target.value.toUpperCase())}
+                    placeholder="Enter test code (e.g. APT01)"
+                    className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <button
+                    onClick={() => {
+                      const responses = feedbackResponses.filter(r => r.test_code === reportTestCode);
+                      if (responses.length === 0) {
+                        setReportData({ error: 'No responses found for this test code.' });
+                        return;
+                      }
+                      const questions = responses[0].questions || [];
+                      const stats = questions.map((q, i) => {
+                        const ratings = responses.map(r => {
+                          const ans = r.answers || {};
+                          return ans[i] || null;
+                        }).filter(Boolean);
+                        const counts = { 'Very Poor': 0, 'Poor': 0, 'Average': 0, 'Good': 0, 'Excellent': 0 };
+                        ratings.forEach(r => { if (counts[r] !== undefined) counts[r]++; });
+                        const total = ratings.length;
+                        const avg = total > 0 ? (ratings.reduce((sum, r) => {
+                          const map = { 'Very Poor': 1, 'Poor': 2, 'Average': 3, 'Good': 4, 'Excellent': 5 };
+                          return sum + (map[r] || 0);
+                        }, 0) / total).toFixed(1) : 0;
+                        return { question: q, counts, total, avg };
+                      });
+                      setReportData({ testCode: reportTestCode, totalResponses: responses.length, stats });
+                    }}
+                    className="px-4 py-2.5 rounded-lg font-bold text-sm bg-accent text-white hover:bg-orange-600 transition"
+                  >
+                    Generate
+                  </button>
+                </div>
+
+                {reportData && reportData.error && (
+                  <p className="text-sm text-red-500 mt-3">{reportData.error}</p>
+                )}
+
+                {reportData && reportData.stats && (
+                  <div className="mt-4 space-y-3 max-h-[50vh] overflow-y-auto">
+                    <div className="flex items-center gap-4 mb-3">
+                      <span className="text-sm font-bold text-slate-700">Test Code: <span className="text-primary">{reportData.testCode}</span></span>
+                      <span className="text-sm font-bold text-slate-700">Total Responses: <span className="text-primary">{reportData.totalResponses}</span></span>
+                    </div>
+                    {reportData.stats.map((s, i) => (
+                      <div key={i} className="bg-white rounded-lg p-3">
+                        <div className="text-sm font-bold text-slate-700 mb-2">Q{i + 1}. {s.question}</div>
+                        <div className="grid grid-cols-5 gap-2 text-center">
+                          {Object.entries(s.counts).map(([label, count]) => (
+                            <div key={label} className="text-center">
+                              <div className="text-xs font-bold text-slate-600">{count}</div>
+                              <div className="text-[10px] text-slate-400">{label}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 bg-slate-100 rounded-full h-2">
+                            <div className="bg-gradient-to-r from-primary to-accent h-2 rounded-full" style={{ width: `${(s.avg / 5) * 100}%` }} />
+                          </div>
+                          <span className="text-xs font-bold text-primary">{s.avg}/5</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-3 mb-4">
               <label className="text-sm font-bold text-slate-600">Select Test Code:</label>
               <select
