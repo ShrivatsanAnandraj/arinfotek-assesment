@@ -32,6 +32,9 @@ export default function AdminPanel() {
   const [surveyMessage, setSurveyMessage] = useState('');
   const [loadingSurvey, setLoadingSurvey] = useState(false);
 
+  const [feedbackResponses, setFeedbackResponses] = useState([]);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
+
   const fetchScores = async () => {
     setLoadingScores(true);
     try {
@@ -69,6 +72,27 @@ export default function AdminPanel() {
   useEffect(() => {
     if (view === 'createsurvey') {
       fetchTemplates();
+    }
+  }, [view]);
+
+  const fetchFeedback = async () => {
+    setLoadingFeedback(true);
+    try {
+      const res = await fetch('/api/surveys?action=responses');
+      const data = await res.json();
+      if (res.ok) {
+        setFeedbackResponses(data.responses || []);
+      }
+    } catch {
+      console.error('Failed to fetch feedback');
+    } finally {
+      setLoadingFeedback(false);
+    }
+  };
+
+  useEffect(() => {
+    if (view === 'feedback') {
+      fetchFeedback();
     }
   }, [view]);
 
@@ -381,6 +405,14 @@ export default function AdminPanel() {
                   >
                     Create Survey
                   </button>
+                  <button
+                    onClick={() => { setView('feedback'); setMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary transition-colors duration-200"
+                    onMouseEnter={(e) => e.target.style.color = '#1e5aa8'}
+                    onMouseLeave={(e) => e.target.style.color = ''}
+                  >
+                    View Feedback
+                  </button>
                 </div>
               )}
             </div>
@@ -643,7 +675,64 @@ export default function AdminPanel() {
                             )}
                           </span>
                           <span className="text-sm font-bold text-slate-700">{template}</span>
-                        </div>
+        {view === 'feedback' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={() => setView('create')}
+                className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-primary transition"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+              <h1 className="text-2xl font-black text-slate-800">Survey Feedback</h1>
+            </div>
+
+            {loadingFeedback ? (
+              <div className="text-center py-10">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+                <p className="text-sm text-slate-500 mt-3">Loading...</p>
+              </div>
+            ) : feedbackResponses.length === 0 ? (
+              <div className="text-center py-10 text-slate-500">
+                <p className="text-sm">No survey responses yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {feedbackResponses.map((resp) => {
+                  const questions = resp.questions || [];
+                  const answers = resp.answers || {};
+                  return (
+                    <div key={resp.id} className="bg-slate-50 rounded-xl p-4 sm:p-5">
+                      <div className="flex flex-wrap items-center gap-3 mb-3">
+                        <span className="bg-primary text-white text-xs font-bold rounded-lg px-2.5 py-1">{resp.student_name}</span>
+                        <span className="text-xs text-slate-500">Reg: {resp.student_register_id}</span>
+                        <span className="text-xs text-slate-500">Test: {resp.test_code}</span>
+                        <span className="text-xs text-slate-500">Template: {resp.template_name}</span>
+                        <span className="text-[11px] text-slate-400">{new Date(resp.submitted_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {questions.map((q, i) => (
+                          <div key={i} className="flex items-start gap-2 text-sm">
+                            <span className="font-bold text-primary shrink-0">Q{i + 1}.</span>
+                            <div className="flex-1">
+                              <p className="text-slate-700 font-medium">{q}</p>
+                              <p className="text-green-600 font-bold mt-0.5">Answer: {answers[i] || 'Not answered'}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
                       </button>
                     ))}
                   </div>

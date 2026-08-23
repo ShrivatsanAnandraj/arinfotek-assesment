@@ -53,7 +53,22 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const { test_code } = req.query;
+      const { test_code, action } = req.query;
+      
+      if (action === 'responses') {
+        const responses = await sql(`
+          SELECT sr.*, s.course, s.trainee, s.template_name, s.questions
+          FROM survey_responses sr
+          JOIN surveys s ON sr.survey_id = s.id
+          ORDER BY sr.submitted_at DESC
+        `);
+        const parsed = responses.map(r => ({
+          ...r,
+          answers: typeof r.answers === 'string' ? JSON.parse(r.answers) : r.answers,
+          questions: typeof r.questions === 'string' ? JSON.parse(r.questions) : r.questions
+        }));
+        return res.status(200).json({ responses: parsed });
+      }
       
       if (test_code) {
         const surveys = await sql(
