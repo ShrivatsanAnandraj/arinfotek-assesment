@@ -35,6 +35,7 @@ export default function AdminPanel() {
   const [feedbackResponses, setFeedbackResponses] = useState([]);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [selectedFeedbackTest, setSelectedFeedbackTest] = useState('all');
+  const [expandedStudent, setExpandedStudent] = useState(null);
 
   const fetchScores = async () => {
     setLoadingScores(true);
@@ -470,7 +471,7 @@ export default function AdminPanel() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <button
-                onClick={() => setView('create')}
+                onClick={() => { setView('create'); setSelectedFeedbackTest('all'); setExpandedStudent(null); }}
                 className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-primary transition"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -481,13 +482,13 @@ export default function AdminPanel() {
               <h1 className="text-2xl font-black text-slate-800">Survey Feedback</h1>
             </div>
             <div className="flex items-center gap-3 mb-4">
-              <label className="text-sm font-bold text-slate-600">Filter by Test Code:</label>
+              <label className="text-sm font-bold text-slate-600">Select Test Code:</label>
               <select
                 value={selectedFeedbackTest}
-                onChange={(e) => setSelectedFeedbackTest(e.target.value)}
+                onChange={(e) => { setSelectedFeedbackTest(e.target.value); setExpandedStudent(null); }}
                 className="px-3 sm:px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 max-w-[60vw] sm:max-w-none"
               >
-                <option value="all">All Tests</option>
+                <option value="all">-- Choose Test Code --</option>
                 {[...new Set(feedbackResponses.map(r => r.test_code))].map(tc => (
                   <option key={tc} value={tc}>{tc}</option>
                 ))}
@@ -498,37 +499,60 @@ export default function AdminPanel() {
                 <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
                 <p className="text-sm text-slate-500 mt-3">Loading...</p>
               </div>
-            ) : feedbackResponses.length === 0 ? (
+            ) : selectedFeedbackTest === 'all' ? (
               <div className="text-center py-10 text-slate-500">
-                <p className="text-sm">No survey responses yet.</p>
+                <p className="text-sm">Please select a test code to view feedback.</p>
               </div>
             ) : (
-              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-                {feedbackResponses
-                  .filter(r => selectedFeedbackTest === 'all' || r.test_code === selectedFeedbackTest)
-                  .map((resp) => {
-                    const qList = resp.questions || [];
-                    const ans = resp.answers || {};
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                {[...new Set(feedbackResponses
+                  .filter(r => r.test_code === selectedFeedbackTest)
+                  .map(r => r.student_register_id))].map(regId => {
+                    const student = feedbackResponses.find(r => r.student_register_id === regId && r.test_code === selectedFeedbackTest);
+                    const allResponses = feedbackResponses.filter(r => r.student_register_id === regId && r.test_code === selectedFeedbackTest);
+                    const isExpanded = expandedStudent === regId;
                     return (
-                      <div key={resp.id} className="bg-slate-50 rounded-xl p-4 sm:p-5">
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
-                          <span className="bg-primary text-white text-xs font-bold rounded-lg px-2.5 py-1">{resp.student_name}</span>
-                          <span className="text-xs text-slate-500">Reg: {resp.student_register_id}</span>
-                          <span className="text-xs text-slate-500">Test: {resp.test_code}</span>
-                          <span className="text-xs text-slate-500">Template: {resp.template_name}</span>
-                          <span className="text-[11px] text-slate-400">{new Date(resp.submitted_at).toLocaleDateString()}</span>
-                        </div>
-                        <div className="space-y-2">
-                          {qList.map((q, i) => (
-                            <div key={i} className="flex items-start gap-2 text-sm">
-                              <span className="font-bold text-primary shrink-0">Q{i + 1}.</span>
-                              <div className="flex-1">
-                                <p className="text-slate-700 font-medium">{q}</p>
-                                <p className="text-green-600 font-bold mt-0.5">Answer: {ans[i] || 'Not answered'}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                      <div key={regId} className="bg-slate-50 rounded-xl overflow-hidden">
+                        <button
+                          onClick={() => setExpandedStudent(isExpanded ? null : regId)}
+                          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-100 transition"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="bg-primary text-white text-xs font-bold rounded-lg px-2.5 py-1">{student.student_name}</span>
+                            <span className="text-xs text-slate-500">Reg: {regId}</span>
+                            <span className="text-[11px] text-slate-400">{allResponses.length} response(s)</span>
+                          </div>
+                          <svg className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {isExpanded && (
+                          <div className="border-t border-slate-200 p-4 space-y-3">
+                            {allResponses.map((resp) => {
+                              const qList = resp.questions || [];
+                              const ans = resp.answers || {};
+                              return (
+                                <div key={resp.id} className="bg-white rounded-lg p-3">
+                                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    <span className="text-xs text-slate-500">Template: {resp.template_name}</span>
+                                    <span className="text-[11px] text-slate-400">{new Date(resp.submitted_at).toLocaleDateString()}</span>
+                                  </div>
+                                  <div className="space-y-1.5">
+                                    {qList.map((q, i) => (
+                                      <div key={i} className="flex items-start gap-2 text-sm">
+                                        <span className="font-bold text-primary shrink-0">Q{i + 1}.</span>
+                                        <div className="flex-1">
+                                          <p className="text-slate-700 font-medium">{q}</p>
+                                          <p className="text-green-600 font-bold mt-0.5">Answer: {ans[i] || 'Not answered'}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
