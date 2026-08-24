@@ -40,6 +40,18 @@ export default function AdminPanel() {
   const [reportTestCode, setReportTestCode] = useState('');
   const [reportData, setReportData] = useState(null);
 
+  const [allTestsQuestions, setAllTestsQuestions] = useState([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [expandedQuestionTest, setExpandedQuestionTest] = useState(null);
+
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateDetails, setTemplateDetails] = useState({});
+  const [loadingTemplateDetails, setLoadingTemplateDetails] = useState(false);
+  const [viewingTemplate, setViewingTemplate] = useState(null);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [editedQuestions, setEditedQuestions] = useState([]);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
   const fetchScores = async () => {
     setLoadingScores(true);
     try {
@@ -101,8 +113,100 @@ export default function AdminPanel() {
     }
   }, [view]);
 
+  const fetchAllQuestions = async () => {
+    setLoadingQuestions(true);
+    try {
+      const res = await fetch('/api/admin');
+      const data = await res.json();
+      if (res.ok) {
+        setAllTestsQuestions(data.tests || []);
+      }
+    } catch {
+      console.error('Failed to fetch questions');
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
+
+  useEffect(() => {
+    if (view === 'viewquestions') {
+      fetchAllQuestions();
+    }
+  }, [view]);
+
   const handleTemplateSelect = (template) => {
     setSurveyTemplateName(template);
+  };
+
+  const fetchTemplateDetails = async () => {
+    setLoadingTemplateDetails(true);
+    try {
+      const res = await fetch('/api/surveys?action=template_details');
+      const data = await res.json();
+      if (res.ok) {
+        setTemplateDetails(data.templates || {});
+      }
+    } catch {
+      console.error('Failed to fetch template details');
+    } finally {
+      setLoadingTemplateDetails(false);
+    }
+  };
+
+  const handleViewTemplate = (templateName) => {
+    setViewingTemplate(templateName);
+    setEditingTemplate(null);
+  };
+
+  const handleEditTemplate = (templateName) => {
+    setEditingTemplate(templateName);
+    setViewingTemplate(null);
+    setEditedQuestions([...(templateDetails[templateName]?.questions || [])]);
+  };
+
+  const handleSaveTemplate = async () => {
+    setSavingTemplate(true);
+    try {
+      const res = await fetch('/api/surveys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_template',
+          template_name: editingTemplate,
+          questions: editedQuestions
+        })
+      });
+      if (res.ok) {
+        setTemplateDetails(prev => ({
+          ...prev,
+          [editingTemplate]: {
+            ...prev[editingTemplate],
+            questions: editedQuestions
+          }
+        }));
+        setEditingTemplate(null);
+        setEditedQuestions([]);
+      }
+    } catch {
+      console.error('Failed to save template');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const handleEditedQuestionChange = (index, value) => {
+    const updated = [...editedQuestions];
+    updated[index] = value;
+    setEditedQuestions(updated);
+  };
+
+  const handleAddEditedQuestion = () => {
+    setEditedQuestions([...editedQuestions, '']);
+  };
+
+  const handleRemoveEditedQuestion = (index) => {
+    if (editedQuestions.length <= 1) return;
+    setEditedQuestions(editedQuestions.filter((_, i) => i !== index));
   };
 
   const handleSubmitSurvey = async (e) => {
@@ -323,6 +427,20 @@ export default function AdminPanel() {
     }
   };
 
+  const deleteTest = async (test_code) => {
+    if (!confirm(`Are you sure you want to delete test "${test_code}" and all its data?`)) return;
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test_code })
+      });
+      if (res.ok) fetchAllQuestions();
+    } catch {
+      alert('Failed to delete test');
+    }
+  };
+
   const getScoresTitle = () => {
     if (selectedTest === 'all') return 'AR INFOTEK - Assessment';
     return 'AR INFOTEK - Assessment (' + selectedTest + ')';
@@ -409,6 +527,14 @@ export default function AdminPanel() {
               {menuOpen && (
                 <div className="absolute right-0 top-12 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-56 z-10">
                   <button
+                    onClick={() => { setView('viewquestions'); setMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary transition-colors duration-200"
+                    onMouseEnter={(e) => e.target.style.color = '#1e5aa8'}
+                    onMouseLeave={(e) => e.target.style.color = ''}
+                  >
+                    View Questions
+                  </button>
+                  <button
                     onClick={() => { setView('feedback'); setMenuOpen(false); }}
                     className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary transition-colors duration-200"
                     onMouseEnter={(e) => e.target.style.color = '#1e5aa8'}
@@ -451,6 +577,107 @@ export default function AdminPanel() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {view === 'viewquestions' && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => setView('create')}
+                className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-primary transition"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+              <h1 className="text-2xl font-black text-slate-800">View Questions</h1>
+              <button
+                onClick={fetchAllQuestions}
+                className="px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark transition"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {loadingQuestions ? (
+              <div className="text-center py-10">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+                <p className="text-sm text-slate-500 mt-3">Loading...</p>
+              </div>
+            ) : allTestsQuestions.length === 0 ? (
+              <div className="text-center py-10 text-slate-500">
+                <p className="text-sm">No tests found.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[65vh] overflow-y-auto">
+                {allTestsQuestions.map((test) => {
+                  const isExpanded = expandedQuestionTest === test.test_code;
+                  return (
+                    <div key={test.test_code} className="bg-slate-50 rounded-xl overflow-hidden border border-slate-100">
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <button
+                          onClick={() => setExpandedQuestionTest(isExpanded ? null : test.test_code)}
+                          className="flex items-center gap-3 flex-1 text-left hover:bg-slate-100 transition rounded-lg px-2 py-1 -ml-2"
+                        >
+                          <span className="bg-primary text-white text-xs font-bold rounded-lg px-2.5 py-1 font-mono">{test.test_code}</span>
+                          <div className="flex-1">
+                            <span className="text-sm font-bold text-slate-800">{test.title}</span>
+                            <span className="text-xs text-slate-400 ml-2">({test.questions.length} questions)</span>
+                          </div>
+                          <svg className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => deleteTest(test.test_code)}
+                          className="ml-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="border-t border-slate-200 p-4 space-y-3">
+                          {test.questions.map((q, qi) => {
+                            const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+                            return (
+                              <div key={q.id} className="bg-white rounded-lg p-3 border border-slate-100">
+                                <div className="flex items-start gap-2">
+                                  <span className="font-bold text-primary text-sm shrink-0">Q{qi + 1}.</span>
+                                  <p className="text-sm text-slate-700 font-medium">{q.question_text}</p>
+                                </div>
+                                <div className="mt-2 ml-6 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                  {options.map((opt, oi) => (
+                                    <div
+                                      key={oi}
+                                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm ${
+                                        q.correct_answer === oi
+                                          ? 'bg-green-100 text-green-700 font-bold border border-green-200'
+                                          : 'bg-slate-50 text-slate-600'
+                                      }`}
+                                    >
+                                      <span className="font-mono text-xs">{String.fromCharCode(65 + oi)}.</span>
+                                      <span>{opt}</span>
+                                      {q.correct_answer === oi && (
+                                        <svg className="w-3.5 h-3.5 text-green-600 ml-auto shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -603,23 +830,30 @@ export default function AdminPanel() {
               </div>
             )}
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <label className="text-sm font-bold text-slate-600">Select Test Code:</label>
-              <select
-                value={selectedFeedbackTest}
-                onChange={(e) => { setSelectedFeedbackTest(e.target.value); setExpandedStudent(null); }}
-                className="px-3 sm:px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 max-w-[60vw] sm:max-w-none"
-              >
-                <option value="all">-- Choose Test Code --</option>
-                {[...new Set(feedbackResponses.map(r => r.test_code))].map(tc => (
-                  <option key={tc} value={tc}>{tc}</option>
-                ))}
-              </select>
+              <div className="w-full sm:w-auto">
+                <label className="block text-sm font-bold text-slate-600 mb-1.5">Select Test Code</label>
+                <div className="relative">
+                  <select
+                    value={selectedFeedbackTest}
+                    onChange={(e) => { setSelectedFeedbackTest(e.target.value); setExpandedStudent(null); }}
+                    className="w-full sm:w-64 px-4 py-2.5 pr-10 rounded-xl border-2 border-slate-200 text-sm font-semibold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition appearance-none cursor-pointer hover:border-slate-300"
+                  >
+                    <option value="all">-- Choose Test Code --</option>
+                    {[...new Set(feedbackResponses.map(r => r.test_code))].map(tc => (
+                      <option key={tc} value={tc}>{tc}</option>
+                    ))}
+                  </select>
+                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
               {selectedFeedbackTest !== 'all' && (
-                <button onClick={() => deleteFeedback('by_test', null, selectedFeedbackTest)} className="px-3 py-2 rounded-lg text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition">
+                <button onClick={() => deleteFeedback('by_test', null, selectedFeedbackTest)} className="px-3 py-2.5 rounded-xl text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition mt-6">
                   Delete All ({selectedFeedbackTest})
                 </button>
               )}
-              <button onClick={() => deleteFeedback('all')} className="px-3 py-2 rounded-lg text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition">
+              <button onClick={() => deleteFeedback('all')} className="px-3 py-2.5 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition mt-6">
                 Delete All Feedback
               </button>
             </div>
@@ -877,36 +1111,43 @@ export default function AdminPanel() {
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-2">Select Template</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {templates.map((template) => (
-                      <button
-                        key={template}
-                        type="button"
-                        onClick={() => handleTemplateSelect(template)}
-                        className={`p-3 rounded-xl border-2 text-left transition-all ${
-                          surveyTemplateName === template
-                            ? 'border-primary bg-primary/5 shadow-sm'
-                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-2">Select Template</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {templates.map((template) => (
+                        <button
+                          key={template}
+                          type="button"
+                          onClick={() => handleTemplateSelect(template)}
+                          className={`p-3 rounded-xl border-2 text-left transition-all ${
                             surveyTemplateName === template
-                              ? 'border-primary bg-primary'
-                              : 'border-slate-300'
-                          }`}>
-                            {surveyTemplateName === template && (
-                              <span className="w-2 h-2 bg-white rounded-full" />
-                            )}
-                          </span>
-                          <span className="text-sm font-bold text-slate-700">{template}</span>
-                        </div>
-                      </button>
-                    ))}
+                              ? 'border-primary bg-primary/5 shadow-sm'
+                              : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                              surveyTemplateName === template
+                                ? 'border-primary bg-primary'
+                                : 'border-slate-300'
+                            }`}>
+                              {surveyTemplateName === template && (
+                                <span className="w-2 h-2 bg-white rounded-full" />
+                              )}
+                            </span>
+                            <span className="text-sm font-bold text-slate-700">{template}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setShowTemplateModal(true); fetchTemplateDetails(); }}
+                      className="mt-3 px-4 py-2 text-sm font-bold text-primary hover:text-primary/80 border border-primary/30 rounded-lg hover:bg-primary/5 transition"
+                    >
+                      View Templates
+                    </button>
                   </div>
-                </div>
               </div>
 
               {surveyMessage && (
@@ -981,6 +1222,144 @@ export default function AdminPanel() {
           </div>
         )}
       </div>
+
+      {showTemplateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-auto my-auto max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+              <h2 className="text-xl font-black text-slate-800">
+                {editingTemplate ? `Editing: ${editingTemplate}` : viewingTemplate ? viewingTemplate : 'Survey Templates'}
+              </h2>
+              <button
+                onClick={() => { setShowTemplateModal(false); setViewingTemplate(null); setEditingTemplate(null); }}
+                className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition"
+              >
+                <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-5">
+              {loadingTemplateDetails ? (
+                <div className="text-center py-10">
+                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+                  <p className="text-sm text-slate-500 mt-3">Loading templates...</p>
+                </div>
+              ) : viewingTemplate ? (
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 mb-1">{templateDetails[viewingTemplate]?.name}</h3>
+                  <p className="text-xs text-slate-400 mb-4">{templateDetails[viewingTemplate]?.questions?.length || 0} Questions</p>
+                  <div className="space-y-3">
+                    {templateDetails[viewingTemplate]?.questions?.map((q, i) => (
+                      <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                        <div className="flex items-start gap-3">
+                          <span className="w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                            {i + 1}
+                          </span>
+                          <p className="text-sm text-slate-700 leading-relaxed">{q}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => setViewingTemplate(null)}
+                      className="flex-1 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+                    >
+                      Back to Templates
+                    </button>
+                    <button
+                      onClick={() => handleEditTemplate(viewingTemplate)}
+                      className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white transition"
+                    >
+                      Edit Template
+                    </button>
+                  </div>
+                </div>
+              ) : editingTemplate ? (
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 mb-1">{templateDetails[editingTemplate]?.name}</h3>
+                  <p className="text-xs text-slate-400 mb-4">{editedQuestions.length} Questions</p>
+                  <div className="space-y-3">
+                    {editedQuestions.map((q, i) => (
+                      <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                        <div className="flex items-start gap-3">
+                          <span className="w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                            {i + 1}
+                          </span>
+                          <div className="flex-1 flex gap-2">
+                            <input
+                              type="text"
+                              value={q}
+                              onChange={(e) => handleEditedQuestionChange(i, e.target.value)}
+                              className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            />
+                            <button
+                              onClick={() => handleRemoveEditedQuestion(i)}
+                              className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-red-400 hover:text-red-600 transition shrink-0"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={handleAddEditedQuestion}
+                    className="mt-3 w-full py-2.5 rounded-lg border-2 border-dashed border-slate-300 text-sm font-bold text-slate-500 hover:border-primary hover:text-primary transition"
+                  >
+                    + Add Question
+                  </button>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => { setEditingTemplate(null); setEditedQuestions([]); }}
+                      className="flex-1 py-2.5 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveTemplate}
+                      disabled={savingTemplate}
+                      className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white transition disabled:opacity-50"
+                    >
+                      {savingTemplate ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {Object.entries(templateDetails).map(([key, tpl]) => (
+                    <div key={key} className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-800">{key}</p>
+                        <p className="text-xs text-slate-500 truncate">{tpl.name} &middot; {tpl.questions?.length || 0} questions</p>
+                      </div>
+                      <div className="flex gap-2 ml-3">
+                        <button
+                          onClick={() => handleViewTemplate(key)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20 transition"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleEditTemplate(key)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-accent to-orange-600 text-white transition"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showImportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto p-4">

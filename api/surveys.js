@@ -82,6 +82,14 @@ export default async function handler(req, res) {
         return res.status(200).json({ surveys: parsed });
       }
 
+      if (action === 'template_details') {
+        const details = {};
+        for (const [key, val] of Object.entries(TEMPLATES)) {
+          details[key] = { name: val.name, questions: val.questions };
+        }
+        return res.status(200).json({ templates: details });
+      }
+
       const surveys = await sql('SELECT * FROM surveys ORDER BY created_at DESC');
       const parsedAll = surveys.map(s => ({
         ...s,
@@ -136,6 +144,17 @@ export default async function handler(req, res) {
         );
 
         return res.status(201).json({ response: result[0] });
+      }
+
+      if (action === 'save_template') {
+        const { template_name, questions } = req.body;
+        if (!template_name || !questions || !Array.isArray(questions)) {
+          return res.status(400).json({ error: 'Missing template_name or questions' });
+        }
+        if (TEMPLATES[template_name]) {
+          TEMPLATES[template_name].questions = questions;
+        }
+        return res.status(200).json({ success: true, templates: Object.keys(TEMPLATES) });
       }
 
       return res.status(400).json({ error: 'Invalid action' });
