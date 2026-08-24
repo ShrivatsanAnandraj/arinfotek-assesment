@@ -43,6 +43,11 @@ export default function SurveyTaker({ survey, studentInfo, testCode, onComplete 
 
   const answeredCount = Object.keys(answers).length;
   const current = questions[currentIndex];
+  const questionText = typeof current === 'string' ? current : current.text;
+  const questionOptions = typeof current === 'string' ? null : current.options;
+  const isNps = typeof current === 'object' && current.nps;
+  const defaultOptions = ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'];
+  const displayOptions = questionOptions || defaultOptions;
 
   if (submitted) {
     return (
@@ -92,33 +97,57 @@ export default function SurveyTaker({ survey, studentInfo, testCode, onComplete 
               <span className="bg-primary text-white text-xs font-bold rounded-lg px-2.5 py-1 shrink-0">
                 Q{currentIndex + 1}
               </span>
-              <h2 className="text-base font-semibold text-slate-800 leading-snug">{current}</h2>
+              <h2 className="text-base font-semibold text-slate-800 leading-snug">{questionText}</h2>
             </div>
 
-            <div className="grid gap-2 sm:gap-3">
-              {['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'].map((option) => (
-                <button
-                  key={option}
-                  onClick={() => handleAnswer(currentIndex, option)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all cursor-pointer ${
-                    answers[currentIndex] === option
-                      ? 'border-primary bg-primary/5 shadow-sm'
-                      : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-                >
-                  <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                    answers[currentIndex] === option
-                      ? 'border-primary bg-primary'
-                      : 'border-slate-300'
-                  }`}>
-                    {answers[currentIndex] === option && (
-                      <span className="w-2 h-2 bg-white rounded-full" />
-                    )}
-                  </span>
-                  <span className="text-sm text-slate-700">{option}</span>
-                </button>
-              ))}
-            </div>
+            {isNps ? (
+              <div>
+                <div className="grid grid-cols-11 gap-1 mb-2">
+                  {displayOptions.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => handleAnswer(currentIndex, option)}
+                      className={`py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        answers[currentIndex] === option
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-between text-[10px] text-slate-400 px-1">
+                  <span>Not at all likely</span>
+                  <span>Extremely likely</span>
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-2 sm:gap-3">
+                {displayOptions.map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => handleAnswer(currentIndex, option)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                      answers[currentIndex] === option
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      answers[currentIndex] === option
+                        ? 'border-primary bg-primary'
+                        : 'border-slate-300'
+                    }`}>
+                      {answers[currentIndex] === option && (
+                        <span className="w-2 h-2 bg-white rounded-full" />
+                      )}
+                    </span>
+                    <span className="text-sm text-slate-700">{option}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-3">

@@ -4,46 +4,46 @@ const TEMPLATES = {
   'Template 1': {
     name: 'IT Training Feedback Survey - Set 1',
     questions: [
-      'Overall Satisfaction. How would you rate this training overall?',
-      'Usefulness for Your Studies. The topics and skills taught are useful for my studies or future career.',
-      'Training Pace. How did you find the speed of teaching during this training?',
-      'Trainer\'s Knowledge & Teaching. Rate the trainer\'s knowledge of the subject and ability to explain difficult ideas clearly.',
-      'Lab & Computer Setup. The computers, software, and online tools worked well without problems.',
-      'Improvement in Your Skills. How much do you feel your skills improved from before the course to now?',
-      'When You Will Use These Skills. When do you think you will use these new IT skills in your studies or projects?',
-      'Course Materials & Slides. The notes, sample code, and slides given to you were clear and useful.',
-      'Most Useful Part. Which topic or activity was the most useful for you?',
-      'Ideas to Improve the Course. What topics, tools, or changes would make this training better for future students?'
+      { text: 'How would you rate your overall experience with the Power BI course?', options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'] },
+      { text: 'How would you rate the quality, relevance, and usefulness of the topics covered in the course?', options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'] },
+      { text: 'How much has your knowledge of Power BI improved after completing the course?', options: ['Very little', 'A little', 'Moderate', 'A lot', 'Very significantly'] },
+      { text: 'How useful were the hands-on exercises and practical activities for understanding Power BI?', options: ['Not useful', 'Slightly useful', 'Moderately useful', 'Useful', 'Very useful'] },
+      { text: "How would you rate the trainer's subject knowledge and expertise?", options: ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'] },
+      { text: 'How clearly did the trainer explain the concepts and demonstrate the practical steps?', options: ['Not clear', 'Slightly clear', 'Moderately clear', 'Clear', 'Very clear'] },
+      { text: 'How effectively did the trainer address questions, doubts, and difficulties during the sessions?', options: ['Not effective', 'Slightly effective', 'Moderately effective', 'Effective', 'Very effective'] },
+      { text: 'How confident are you now in using Power BI for real-world data analysis and dashboard development?', options: ['Not confident', 'Slightly confident', 'Moderately confident', 'Confident', 'Very confident'] },
+      { text: 'How likely are you to recommend this Power BI course to your friends, colleagues, or classmates?', options: ['0','1','2','3','4','5','6','7','8','9','10'], nps: true },
+      { text: 'How satisfied are you with the overall course, trainer, learning experience, and practical exposure?', options: ['Very dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very satisfied'] }
     ]
   },
   'Template 2': {
     name: 'IT Training Feedback Survey - Set 2',
     questions: [
-      'Quality of Practice Exercises. Rate the quality and real-life usefulness of the hands-on lab exercises.',
-      'Were You Ready for This Course. I had enough background knowledge before starting this course.',
-      'Difficulty of the Labs. How would you describe the difficulty level of the practice labs?',
-      'Help With Problems. Rate how helpful the trainer was when you faced problems or errors during the labs.',
-      'Balance of Theory and Practice. The balance between lectures and hands-on practice was good.',
-      'Confidence After Training. How confident do you feel solving problems on your own after this training?',
-      'Usefulness of Sample Code. Rate how useful the sample code, scripts, or files given to you were.',
-      'Did the Course Meet Its Goals. This training covered everything it promised to teach.',
-      'Hardest Lab or Exercise. Which lab or exercise was the hardest for you to complete, and why?',
-      'More Practice Tools Needed. What other practice tools or lab setups would help you learn better?'
+      { text: 'Quality of Practice Exercises. Rate the quality and real-life usefulness of the hands-on lab exercises.' },
+      { text: 'Were You Ready for This Course. I had enough background knowledge before starting this course.' },
+      { text: 'Difficulty of the Labs. How would you describe the difficulty level of the practice labs?' },
+      { text: 'Help With Problems. Rate how helpful the trainer was when you faced problems or errors during the labs.' },
+      { text: 'Balance of Theory and Practice. The balance between lectures and hands-on practice was good.' },
+      { text: 'Confidence After Training. How confident do you feel solving problems on your own after this training?' },
+      { text: 'Usefulness of Sample Code. Rate how useful the sample code, scripts, or files given to you were.' },
+      { text: 'Did the Course Meet Its Goals. This training covered everything it promised to teach.' },
+      { text: 'Hardest Lab or Exercise. Which lab or exercise was the hardest for you to complete, and why?' },
+      { text: 'More Practice Tools Needed. What other practice tools or lab setups would help you learn better?' }
     ]
   },
   'Template 3': {
     name: 'IT Training Feedback Survey - Set 3',
     questions: [
-      'Trainer\'s Communication. Rate how clearly the trainer spoke and how well they kept the class interested.',
-      'Time Given for Exercises. Was there enough time to comfortably finish each hands-on activity?',
-      'Up-to-date Technology. The tools and technical ideas taught match what is used in the industry today.',
-      'Group Work & Discussions. Rate how useful the Q&A sessions, group discussions, and interaction with classmates were.',
-      'Would You Recommend This Course. How likely are you to recommend this training to a friend or classmate?',
-      'Quality of Notes & Guides. The notes and reference guides given will be useful to you later on.',
-      'Overall Learning Experience. Rate your overall experience with the course structure, content, and teaching.',
-      'Support After the Course. What kind of extra help or follow-up support would help you continue learning?',
-      'Most Important Thing You Learned. What is the one most important skill or idea you learned from this course?',
-      'Topics You Want Next. What other IT, Cloud, DevOps, or Software topics would you like to learn next?'
+      { text: "Trainer's Communication. Rate how clearly the trainer spoke and how well they kept the class interested." },
+      { text: 'Time Given for Exercises. Was there enough time to comfortably finish each hands-on activity?' },
+      { text: 'Up-to-date Technology. The tools and technical ideas taught match what is used in the industry today.' },
+      { text: 'Group Work & Discussions. Rate how useful the Q&A sessions, group discussions, and interaction with classmates were.' },
+      { text: 'Would You Recommend This Course. How likely are you to recommend this training to a friend or classmate?' },
+      { text: 'Quality of Notes & Guides. The notes and reference guides given will be useful to you later on.' },
+      { text: 'Overall Learning Experience. Rate your overall experience with the course structure, content, and teaching.' },
+      { text: 'Support After the Course. What kind of extra help or follow-up support would help you continue learning?' },
+      { text: 'Most Important Thing You Learned. What is the one most important skill or idea you learned from this course?' },
+      { text: 'Topics You Want Next. What other IT, Cloud, DevOps, or Software topics would you like to learn next?' }
     ]
   }
 };

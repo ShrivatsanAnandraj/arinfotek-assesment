@@ -775,18 +775,22 @@ export default function AdminPanel() {
                       }
                       const questions = responses[0].questions || [];
                       const stats = questions.map((q, i) => {
+                        const qObj = typeof q === 'string' ? { text: q, options: ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'] } : q;
+                        const qText = qObj.text || q;
+                        const qOptions = qObj.options || ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'];
                         const ratings = responses.map(r => {
                           const ans = r.answers || {};
                           return ans[i] || null;
                         }).filter(Boolean);
-                        const counts = { 'Very Poor': 0, 'Poor': 0, 'Average': 0, 'Good': 0, 'Excellent': 0 };
+                        const counts = {};
+                        qOptions.forEach(opt => { counts[opt] = 0; });
                         ratings.forEach(r => { if (counts[r] !== undefined) counts[r]++; });
                         const total = ratings.length;
                         const avg = total > 0 ? (ratings.reduce((sum, r) => {
-                          const map = { 'Very Poor': 1, 'Poor': 2, 'Average': 3, 'Good': 4, 'Excellent': 5 };
-                          return sum + (map[r] || 0);
+                          const idx = qOptions.indexOf(r);
+                          return sum + (idx >= 0 ? idx + 1 : 0);
                         }, 0) / total).toFixed(1) : 0;
-                        return { question: q, counts, total, avg };
+                        return { question: qText, options: qOptions, counts, total, avg };
                       });
                       setReportData({ testCode: reportTestCode, totalResponses: responses.length, stats });
                     }}
@@ -809,19 +813,19 @@ export default function AdminPanel() {
                     {reportData.stats.map((s, i) => (
                       <div key={i} className="bg-white rounded-lg p-3">
                         <div className="text-sm font-bold text-slate-700 mb-2">Q{i + 1}. {s.question}</div>
-                        <div className="grid grid-cols-5 gap-2 text-center">
-                          {Object.entries(s.counts).map(([label, count]) => (
+                        <div className={`grid gap-2 text-center ${s.options.length <= 5 ? 'grid-cols-5' : 'grid-cols-11'}`}>
+                          {s.options.map((label) => (
                             <div key={label} className="text-center">
-                              <div className="text-xs font-bold text-slate-600">{count}</div>
+                              <div className="text-xs font-bold text-slate-600">{s.counts[label] || 0}</div>
                               <div className="text-[10px] text-slate-400">{label}</div>
                             </div>
                           ))}
                         </div>
                         <div className="mt-2 flex items-center gap-2">
                           <div className="flex-1 bg-slate-100 rounded-full h-2">
-                            <div className="bg-gradient-to-r from-primary to-accent h-2 rounded-full" style={{ width: `${(s.avg / 5) * 100}%` }} />
+                            <div className="bg-gradient-to-r from-primary to-accent h-2 rounded-full" style={{ width: `${(s.avg / s.options.length) * 100}%` }} />
                           </div>
-                          <span className="text-xs font-bold text-primary">{s.avg}/5</span>
+                          <span className="text-xs font-bold text-primary">{s.avg}/{s.options.length}</span>
                         </div>
                       </div>
                     ))}
@@ -1251,16 +1255,29 @@ export default function AdminPanel() {
                   <h3 className="text-lg font-bold text-slate-800 mb-1">{templateDetails[viewingTemplate]?.name}</h3>
                   <p className="text-xs text-slate-400 mb-4">{templateDetails[viewingTemplate]?.questions?.length || 0} Questions</p>
                   <div className="space-y-3">
-                    {templateDetails[viewingTemplate]?.questions?.map((q, i) => (
-                      <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                        <div className="flex items-start gap-3">
-                          <span className="w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                            {i + 1}
-                          </span>
-                          <p className="text-sm text-slate-700 leading-relaxed">{q}</p>
+                    {templateDetails[viewingTemplate]?.questions?.map((q, i) => {
+                      const qText = typeof q === 'string' ? q : q.text;
+                      const qOptions = typeof q === 'string' ? null : q.options;
+                      return (
+                        <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                          <div className="flex items-start gap-3">
+                            <span className="w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                              {i + 1}
+                            </span>
+                            <div className="flex-1">
+                              <p className="text-sm text-slate-700 leading-relaxed">{qText}</p>
+                              {qOptions && (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  {qOptions.map((opt) => (
+                                    <span key={opt} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">{opt}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <div className="flex gap-3 mt-6">
                     <button
@@ -1282,31 +1299,42 @@ export default function AdminPanel() {
                   <h3 className="text-lg font-bold text-slate-800 mb-1">{templateDetails[editingTemplate]?.name}</h3>
                   <p className="text-xs text-slate-400 mb-4">{editedQuestions.length} Questions</p>
                   <div className="space-y-3">
-                    {editedQuestions.map((q, i) => (
-                      <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                        <div className="flex items-start gap-3">
-                          <span className="w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                            {i + 1}
-                          </span>
-                          <div className="flex-1 flex gap-2">
-                            <input
-                              type="text"
-                              value={q}
-                              onChange={(e) => handleEditedQuestionChange(i, e.target.value)}
-                              className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                            />
-                            <button
-                              onClick={() => handleRemoveEditedQuestion(i)}
-                              className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-red-400 hover:text-red-600 transition shrink-0"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
+                    {editedQuestions.map((q, i) => {
+                      const qText = typeof q === 'string' ? q : q.text;
+                      const qOptions = typeof q === 'string' ? null : q.options;
+                      return (
+                        <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                          <div className="flex items-start gap-3">
+                            <span className="w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                              {i + 1}
+                            </span>
+                            <div className="flex-1 flex gap-2">
+                              <input
+                                type="text"
+                                value={qText}
+                                onChange={(e) => handleEditedQuestionChange(i, e.target.value)}
+                                className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                              />
+                              <button
+                                onClick={() => handleRemoveEditedQuestion(i)}
+                                className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-red-400 hover:text-red-600 transition shrink-0"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
+                          {qOptions && (
+                            <div className="mt-2 ml-10 flex flex-wrap gap-1.5">
+                              {qOptions.map((opt) => (
+                                <span key={opt} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">{opt}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <button
                     onClick={handleAddEditedQuestion}
