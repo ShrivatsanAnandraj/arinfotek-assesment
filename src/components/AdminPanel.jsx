@@ -873,7 +873,7 @@ export default function AdminPanel() {
                 </button>
                 <button
                   onClick={() => setShowDataAnalysis(!showDataAnalysis)}
-                  className="px-3 py-2 rounded-lg text-xs font-bold bg-purple-600 text-white hover:bg-purple-700 transition"
+                  className="px-3 py-2 rounded-lg text-xs font-bold bg-orange-600 text-white hover:bg-orange-700 transition"
                 >
                   {showDataAnalysis ? 'Close Analysis' : 'Data Analysis'}
                 </button>
@@ -984,7 +984,7 @@ export default function AdminPanel() {
                   />
                   <button
                     onClick={() => generateDataAnalysis(dataAnalysisTestCode)}
-                    className="px-4 py-2.5 rounded-lg font-bold text-sm bg-purple-600 text-white hover:bg-purple-700 transition"
+                    className="px-4 py-2.5 rounded-lg font-bold text-sm bg-orange-600 text-white hover:bg-orange-700 transition"
                   >
                     Generate
                   </button>
@@ -997,15 +997,15 @@ export default function AdminPanel() {
                     <div className="flex items-center gap-4">
                       <span className="text-sm font-bold text-slate-700">Test Code: <span className="text-primary">{dataAnalysisResult.testCode}</span></span>
                       <span className="text-sm font-bold text-slate-700">Responses: <span className="text-primary">{dataAnalysisResult.totalResponses}</span></span>
-                      <span className={`text-sm font-bold px-3 py-1 rounded-full ${dataAnalysisResult.overallSentiment === 'Mostly Positive' ? 'bg-green-100 text-green-700' : dataAnalysisResult.overallSentiment === 'Needs Improvement' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700'}`}>
+                      <span className={`text-sm font-bold px-3 py-1 rounded-full ${dataAnalysisResult.overallSentiment === 'Mostly Positive' ? 'bg-blue-100 text-blue-700' : dataAnalysisResult.overallSentiment === 'Needs Improvement' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700'}`}>
                         {dataAnalysisResult.overallSentiment}
                       </span>
                     </div>
                     {dataAnalysisResult.positives.length > 0 && (
-                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                        <h4 className="text-sm font-bold text-green-700 mb-2">Strengths & Positives</h4>
+                      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <h4 className="text-sm font-bold text-blue-700 mb-2">Strengths & Positives</h4>
                         {dataAnalysisResult.positives.map((p, i) => (
-                          <div key={i} className="flex items-center gap-2 text-sm text-green-600 mb-1">
+                          <div key={i} className="flex items-center gap-2 text-sm text-blue-600 mb-1">
                             <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                             <span>{p.q} <span className="font-bold">({p.pct}% positive)</span></span>
                           </div>
