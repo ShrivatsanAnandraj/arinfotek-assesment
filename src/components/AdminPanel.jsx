@@ -52,6 +52,14 @@ export default function AdminPanel() {
   const [editedQuestions, setEditedQuestions] = useState([]);
   const [savingTemplate, setSavingTemplate] = useState(false);
 
+  const [showFeedbackPdfModal, setShowFeedbackPdfModal] = useState(false);
+  const [feedbackPdfStudent, setFeedbackPdfStudent] = useState('');
+  const [showReportPdfModal, setShowReportPdfModal] = useState(false);
+  const [reportPdfStudent, setReportPdfStudent] = useState('');
+  const [showDataAnalysis, setShowDataAnalysis] = useState(false);
+  const [dataAnalysisTestCode, setDataAnalysisTestCode] = useState('');
+  const [dataAnalysisResult, setDataAnalysisResult] = useState(null);
+
   const fetchScores = async () => {
     setLoadingScores(true);
     try {
@@ -207,6 +215,117 @@ export default function AdminPanel() {
   const handleRemoveEditedQuestion = (index) => {
     if (editedQuestions.length <= 1) return;
     setEditedQuestions(editedQuestions.filter((_, i) => i !== index));
+  };
+
+  const generateFeedbackPdf = (testCode, studentName) => {
+    const doc = new jsPDF();
+    const responses = feedbackResponses.filter(r => r.test_code === testCode);
+    const filtered = studentName ? responses.filter(r => r.student_name.toLowerCase().includes(studentName.toLowerCase())) : responses;
+    if (filtered.length === 0) { alert('No responses found.'); return; }
+    doc.setFontSize(16);
+    doc.text(`AR INFOTEK - Feedback (${testCode})`, 14, 15);
+    if (studentName) doc.text(`Student: ${studentName}`, 14, 22);
+    let y = studentName ? 30 : 22;
+    const grouped = {};
+    filtered.forEach(r => {
+      const key = r.student_register_id;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(r);
+    });
+    Object.entries(grouped).forEach(([regId, resps]) => {
+      if (y > 260) { doc.addPage(); y = 15; }
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text(`${resps[0].student_name} (${regId})`, 14, y);
+      y += 7;
+      resps.forEach(resp => {
+        const qList = resp.questions || [];
+        const ans = resp.answers || {};
+        qList.forEach((q, i) => {
+          if (y > 270) { doc.addPage(); y = 15; }
+          const qText = typeof q === 'string' ? q : q.text;
+          doc.setFontSize(9);
+          doc.setFont(undefined, 'bold');
+          doc.text(`Q${i + 1}: ${qText}`, 18, y);
+          y += 5;
+          doc.setFont(undefined, 'normal');
+          doc.text(`Answer: ${ans[i] || 'Not answered'}`, 18, y);
+          y += 6;
+        });
+        y += 3;
+      });
+      y += 5;
+    });
+    doc.save(`AR_INFOTEK_Feedback_${testCode}${studentName ? '_' + studentName : ''}.pdf`);
+  };
+
+  const generateReportPdf = (testCode, studentName) => {
+    const doc = new jsPDF();
+    const responses = feedbackResponses.filter(r => r.test_code === testCode);
+    const filtered = studentName ? responses.filter(r => r.student_name.toLowerCase().includes(studentName.toLowerCase())) : responses;
+    if (filtered.length === 0) { alert('No responses found.'); return; }
+    doc.setFontSize(16);
+    doc.text(`AR INFOTEK - Survey Report (${testCode})`, 14, 15);
+    if (studentName) doc.text(`Student: ${studentName}`, 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Total Responses: ${filtered.length}`, 14, studentName ? 29 : 22);
+    let y = studentName ? 37 : 30;
+    const questions = filtered[0].questions || [];
+    questions.forEach((q, i) => {
+      const qText = typeof q === 'string' ? q : q.text;
+      const qOptions = typeof q === 'string' ? ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'] : (q.options || []);
+      const ratings = filtered.map(r => r.answers?.[i]).filter(Boolean);
+      const counts = {};
+      qOptions.forEach(opt => { counts[opt] = 0; });
+      ratings.forEach(r => { if (counts[r] !== undefined) counts[r]++; });
+      if (y > 250) { doc.addPage(); y = 15; }
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text(`Q${i + 1}: ${qText}`, 14, y);
+      y += 6;
+      doc.setFont(undefined, 'normal');
+      qOptions.forEach(opt => {
+        doc.text(`  ${opt}: ${counts[opt]}`, 18, y);
+        y += 5;
+      });
+      y += 3;
+    });
+    doc.save(`AR_INFOTEK_Report_${testCode}${studentName ? '_' + studentName : ''}.pdf`);
+  };
+
+  const generateDataAnalysis = (testCode) => {
+    const responses = feedbackResponses.filter(r => r.test_code === testCode);
+    if (responses.length === 0) { setDataAnalysisResult({ error: 'No responses found.' }); return; }
+    const questions = responses[0].questions || [];
+    const positives = [];
+    const improvements = [];
+    const negatives = [];
+    questions.forEach((q, i) => {
+      const qText = typeof q === 'string' ? q : q.text;
+      const qOptions = typeof q === 'string' ? ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'] : (q.options || []);
+      const ratings = responses.map(r => r.answers?.[i]).filter(Boolean);
+      const counts = {};
+      qOptions.forEach(opt => { counts[opt] = 0; });
+      ratings.forEach(r => { if (counts[r] !== undefined) counts[r]++; });
+      const total = ratings.length;
+      const positiveOpts = qOptions.slice(Math.ceil(qOptions.length * 0.6));
+      const negativeOpts = qOptions.slice(0, Math.floor(qOptions.length * 0.4));
+      const posCount = positiveOpts.reduce((s, o) => s + (counts[o] || 0), 0);
+      const negCount = negativeOpts.reduce((s, o) => s + (counts[o] || 0), 0);
+      const posPct = total > 0 ? Math.round((posCount / total) * 100) : 0;
+      const negPct = total > 0 ? Math.round((negCount / total) * 100) : 0;
+      if (posPct >= 60) positives.push({ q: qText, pct: posPct });
+      if (negPct >= 40) negatives.push({ q: qText, pct: negPct });
+      if (posPct < 60 && negPct < 40) improvements.push({ q: qText, posPct, negPct });
+    });
+    setDataAnalysisResult({
+      testCode,
+      totalResponses: responses.length,
+      positives,
+      negatives,
+      improvements,
+      overallSentiment: positives.length > negatives.length ? 'Mostly Positive' : positives.length < negatives.length ? 'Needs Improvement' : 'Mixed'
+    });
   };
 
   const handleSubmitSurvey = async (e) => {
@@ -708,14 +827,11 @@ export default function AdminPanel() {
                     <option key={t.id} value={t.test_code}>{t.test_code} - {t.title}</option>
                   ))}
                 </select>
-                {selectedTest !== 'all' && (
-                  <button onClick={() => deleteScore('by_test', null, selectedTest)} className="px-3 py-2 rounded-lg text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition">
-                    Delete All ({selectedTest})
-                  </button>
-                )}
-                <button onClick={() => deleteScore('all')} className="px-3 py-2 rounded-lg text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition">
-                  Delete All Scores
+              {selectedTest !== 'all' && (
+                <button onClick={() => deleteScore('by_test', null, selectedTest)} className="px-3 py-2 rounded-lg text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition">
+                  Delete ({selectedTest})
                 </button>
+              )}
               </div>
               <div className="flex flex-wrap gap-2">
                 <button onClick={printScores} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark transition">
@@ -748,12 +864,26 @@ export default function AdminPanel() {
                 Back
               </button>
               <h1 className="text-2xl font-black text-slate-800">Survey Feedback</h1>
-              <button
-                onClick={() => setShowSurveyReport(!showSurveyReport)}
-                className="px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark transition"
-              >
-                {showSurveyReport ? 'Close Report' : 'Survey Report'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowFeedbackPdfModal(true)}
+                  className="px-3 py-2 rounded-lg text-xs font-bold bg-green-600 text-white hover:bg-green-700 transition"
+                >
+                  Download PDF
+                </button>
+                <button
+                  onClick={() => setShowDataAnalysis(!showDataAnalysis)}
+                  className="px-3 py-2 rounded-lg text-xs font-bold bg-purple-600 text-white hover:bg-purple-700 transition"
+                >
+                  {showDataAnalysis ? 'Close Analysis' : 'Data Analysis'}
+                </button>
+                <button
+                  onClick={() => setShowSurveyReport(!showSurveyReport)}
+                  className="px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark transition"
+                >
+                  {showSurveyReport ? 'Close Report' : 'Survey Report'}
+                </button>
+              </div>
             </div>
 
             {showSurveyReport && (
@@ -831,8 +961,83 @@ export default function AdminPanel() {
                     ))}
                   </div>
                 )}
+                {reportData && reportData.stats && (
+                  <button
+                    onClick={() => setShowReportPdfModal(true)}
+                    className="mt-3 w-full py-2.5 rounded-lg font-bold text-sm bg-green-600 text-white hover:bg-green-700 transition"
+                  >
+                    Download Report PDF
+                  </button>
+                )}
               </div>
             )}
+
+            {showDataAnalysis && (
+              <div className="bg-slate-50 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <input
+                    type="text"
+                    value={dataAnalysisTestCode}
+                    onChange={(e) => setDataAnalysisTestCode(e.target.value.toUpperCase())}
+                    placeholder="Enter test code (e.g. APT01)"
+                    className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <button
+                    onClick={() => generateDataAnalysis(dataAnalysisTestCode)}
+                    className="px-4 py-2.5 rounded-lg font-bold text-sm bg-purple-600 text-white hover:bg-purple-700 transition"
+                  >
+                    Generate
+                  </button>
+                </div>
+                {dataAnalysisResult && dataAnalysisResult.error && (
+                  <p className="text-sm text-red-500">{dataAnalysisResult.error}</p>
+                )}
+                {dataAnalysisResult && !dataAnalysisResult.error && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-bold text-slate-700">Test Code: <span className="text-primary">{dataAnalysisResult.testCode}</span></span>
+                      <span className="text-sm font-bold text-slate-700">Responses: <span className="text-primary">{dataAnalysisResult.totalResponses}</span></span>
+                      <span className={`text-sm font-bold px-3 py-1 rounded-full ${dataAnalysisResult.overallSentiment === 'Mostly Positive' ? 'bg-green-100 text-green-700' : dataAnalysisResult.overallSentiment === 'Needs Improvement' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700'}`}>
+                        {dataAnalysisResult.overallSentiment}
+                      </span>
+                    </div>
+                    {dataAnalysisResult.positives.length > 0 && (
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <h4 className="text-sm font-bold text-green-700 mb-2">Strengths & Positives</h4>
+                        {dataAnalysisResult.positives.map((p, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm text-green-600 mb-1">
+                            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            <span>{p.q} <span className="font-bold">({p.pct}% positive)</span></span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {dataAnalysisResult.negatives.length > 0 && (
+                      <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                        <h4 className="text-sm font-bold text-red-700 mb-2">Areas of Concern</h4>
+                        {dataAnalysisResult.negatives.map((n, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm text-red-600 mb-1">
+                            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            <span>{n.q} <span className="font-bold">({n.pct}% negative)</span></span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {dataAnalysisResult.improvements.length > 0 && (
+                      <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                        <h4 className="text-sm font-bold text-yellow-700 mb-2">Fields for Improvement</h4>
+                        {dataAnalysisResult.improvements.map((imp, i) => (
+                          <div key={i} className="text-sm text-yellow-600 mb-1">
+                            {imp.q} <span className="font-bold">(Positive: {imp.posPct}%, Negative: {imp.negPct}%)</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center gap-3 mb-4">
               <div className="w-full sm:w-auto">
                 <label className="block text-sm font-bold text-slate-600 mb-1.5">Select Test Code</label>
@@ -854,12 +1059,9 @@ export default function AdminPanel() {
               </div>
               {selectedFeedbackTest !== 'all' && (
                 <button onClick={() => deleteFeedback('by_test', null, selectedFeedbackTest)} className="px-3 py-2.5 rounded-xl text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition mt-6">
-                  Delete All ({selectedFeedbackTest})
+                  Delete ({selectedFeedbackTest})
                 </button>
               )}
-              <button onClick={() => deleteFeedback('all')} className="px-3 py-2.5 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition mt-6">
-                Delete All Feedback
-              </button>
             </div>
             {loadingFeedback ? (
               <div className="text-center py-10">
@@ -900,23 +1102,31 @@ export default function AdminPanel() {
                               const ans = resp.answers || {};
                               return (
                                 <div key={resp.id} className="bg-white rounded-lg p-3">
-                                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs text-slate-500">Template: {resp.template_name}</span>
-                                      <span className="text-[11px] text-slate-400">{new Date(resp.submitted_at).toLocaleDateString()}</span>
-                                    </div>
-                                    <button onClick={() => deleteFeedback('single', resp.id)} className="text-red-400 hover:text-red-600 text-xs font-bold">Delete</button>
+                                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    <span className="text-xs text-slate-500">Template: {resp.template_name}</span>
+                                    <span className="text-[11px] text-slate-400">{new Date(resp.submitted_at).toLocaleDateString()}</span>
                                   </div>
                                   <div className="space-y-1.5">
-                                    {qList.map((q, i) => (
-                                      <div key={i} className="flex items-start gap-2 text-sm">
-                                        <span className="font-bold text-primary shrink-0">Q{i + 1}.</span>
-                                        <div className="flex-1">
-                                          <p className="text-slate-700 font-medium">{q}</p>
-                                          <p className="text-green-600 font-bold mt-0.5">Answer: {ans[i] || 'Not answered'}</p>
+                                    {qList.map((q, i) => {
+                                      const qText = typeof q === 'string' ? q : q.text;
+                                      const qOptions = typeof q === 'string' ? null : q.options;
+                                      return (
+                                        <div key={i} className="flex items-start gap-2 text-sm">
+                                          <span className="font-bold text-primary shrink-0">Q{i + 1}.</span>
+                                          <div className="flex-1">
+                                            <p className="text-slate-700 font-medium">{qText}</p>
+                                            {qOptions && (
+                                              <div className="mt-1 flex flex-wrap gap-1">
+                                                {qOptions.map((opt) => (
+                                                  <span key={opt} className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${ans[i] === opt ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{opt}</span>
+                                                ))}
+                                              </div>
+                                            )}
+                                            <p className="text-green-600 font-bold mt-0.5">Answer: {ans[i] || 'Not answered'}</p>
+                                          </div>
                                         </div>
-                                      </div>
-                                    ))}
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               );
@@ -1213,9 +1423,6 @@ export default function AdminPanel() {
                           <td className="py-2 sm:py-3 px-1.5 sm:px-2 text-slate-500 text-[11px] sm:text-xs">
                             {new Date(s.submitted_at).toLocaleDateString()}
                           </td>
-                          <td className="py-2 sm:py-3 px-1.5 sm:px-2">
-                            <button onClick={() => deleteScore('single', s.id)} className="text-red-400 hover:text-red-600 text-xs font-bold">Delete</button>
-                          </td>
                         </tr>
                       );
                     })}
@@ -1385,6 +1592,88 @@ export default function AdminPanel() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {showFeedbackPdfModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-black text-slate-800 mb-4">Download Feedback PDF</h3>
+            <p className="text-sm text-slate-500 mb-4">Choose what to download for <span className="font-bold text-primary">{selectedFeedbackTest}</span></p>
+            <div className="space-y-3">
+              <button
+                onClick={() => { generateFeedbackPdf(selectedFeedbackTest, ''); setShowFeedbackPdfModal(false); }}
+                className="w-full py-3 rounded-xl font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
+              >
+                Full Test Code PDF
+              </button>
+              <div className="border-t border-slate-200 pt-3">
+                <label className="block text-xs font-bold text-slate-600 mb-1">Or enter student name</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={feedbackPdfStudent}
+                    onChange={(e) => setFeedbackPdfStudent(e.target.value)}
+                    placeholder="Student name"
+                    className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <button
+                    onClick={() => { generateFeedbackPdf(selectedFeedbackTest, feedbackPdfStudent); setShowFeedbackPdfModal(false); setFeedbackPdfStudent(''); }}
+                    className="px-4 py-2 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white transition"
+                  >
+                    Download
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => { setShowFeedbackPdfModal(false); setFeedbackPdfStudent(''); }}
+              className="w-full mt-4 py-2 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showReportPdfModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-black text-slate-800 mb-4">Download Report PDF</h3>
+            <p className="text-sm text-slate-500 mb-4">Choose what to download for <span className="font-bold text-primary">{reportTestCode}</span></p>
+            <div className="space-y-3">
+              <button
+                onClick={() => { generateReportPdf(reportTestCode, ''); setShowReportPdfModal(false); }}
+                className="w-full py-3 rounded-xl font-bold text-sm bg-primary text-white hover:bg-primary-dark transition"
+              >
+                Full Test Code Report
+              </button>
+              <div className="border-t border-slate-200 pt-3">
+                <label className="block text-xs font-bold text-slate-600 mb-1">Or enter student name</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={reportPdfStudent}
+                    onChange={(e) => setReportPdfStudent(e.target.value)}
+                    placeholder="Student name"
+                    className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <button
+                    onClick={() => { generateReportPdf(reportTestCode, reportPdfStudent); setShowReportPdfModal(false); setReportPdfStudent(''); }}
+                    className="px-4 py-2 rounded-lg font-bold text-sm bg-gradient-to-r from-accent to-orange-600 text-white transition"
+                  >
+                    Download
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => { setShowReportPdfModal(false); setReportPdfStudent(''); }}
+              className="w-full mt-4 py-2 rounded-lg font-bold text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
