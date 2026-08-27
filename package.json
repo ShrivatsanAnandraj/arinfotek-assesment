@@ -1,5 +1,5 @@
 {
-  "name": "codelearn-arinfotek",
+  "name": "assesment-arinfotek",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -9,15 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@monaco-editor/react": "^4.6.0",
-    "@neondatabase/serverless": "^1.1.0",
-    "lucide-react": "^0.378.0",
+    "@neondatabase/serverless": "^0.10.4",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^6.23.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.4",
