@@ -8,10 +8,7 @@ export default async function handler(req, res) {
 
   if (method === 'GET') {
     try {
-      const result = await sql`
-        SELECT * FROM progress 
-        WHERE user_id = ${user_id} AND language = ${language}
-      `
+      const result = await sql`SELECT * FROM progress WHERE user_id = ${user_id} AND language = ${language}`
       return res.status(200).json({ progress: result })
     } catch (error) {
       console.error('Get progress error:', error)
@@ -21,16 +18,8 @@ export default async function handler(req, res) {
 
   if (method === 'POST') {
     const { topic, completed } = req.body
-
     try {
-      const result = await sql`
-        INSERT INTO progress (user_id, language, topic, completed, completed_at)
-        VALUES (${user_id}, ${language}, ${topic}, ${completed}, ${completed ? NOW() : NULL})
-        ON CONFLICT (user_id, language, topic) DO UPDATE SET
-          completed = EXCLUDED.completed,
-          completed_at = EXCLUDED.completed_at
-        RETURNING *
-      `
+      const result = await sql`INSERT INTO progress (user_id, language, topic, completed, completed_at) VALUES (${user_id}, ${language}, ${topic}, ${completed}, CASE WHEN ${completed} THEN NOW() ELSE NULL END) ON CONFLICT (user_id, language, topic) DO UPDATE SET completed = EXCLUDED.completed, completed_at = EXCLUDED.completed_at RETURNING *`
       return res.status(200).json({ progress: result[0] })
     } catch (error) {
       console.error('Update progress error:', error)

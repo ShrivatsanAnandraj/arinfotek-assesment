@@ -1,4 +1,3 @@
--- Users table
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(50) UNIQUE NOT NULL,
@@ -7,7 +6,6 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Saved files table
 CREATE TABLE IF NOT EXISTS saved_files (
   id SERIAL PRIMARY KEY,
   user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -18,7 +16,6 @@ CREATE TABLE IF NOT EXISTS saved_files (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Progress table
 CREATE TABLE IF NOT EXISTS progress (
   id SERIAL PRIMARY KEY,
   user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -29,7 +26,6 @@ CREATE TABLE IF NOT EXISTS progress (
   UNIQUE(user_id, language, topic)
 );
 
--- Stats table
 CREATE TABLE IF NOT EXISTS stats (
   id SERIAL PRIMARY KEY,
   user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -39,7 +35,6 @@ CREATE TABLE IF NOT EXISTS stats (
   last_active TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_saved_files_user_id ON saved_files(user_id);
 CREATE INDEX IF NOT EXISTS idx_progress_user_id ON progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_stats_user_id ON stats(user_id);

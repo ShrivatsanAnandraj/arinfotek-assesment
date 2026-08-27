@@ -16,10 +16,10 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ action: 'login', username, password })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Login failed')
@@ -33,10 +33,10 @@ export function AuthProvider({ children }) {
 
   const signup = async (username, email, password) => {
     try {
-      const res = await fetch('/api/auth/signup', {
+      const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password })
+        body: JSON.stringify({ action: 'signup', username, email, password })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Signup failed')
