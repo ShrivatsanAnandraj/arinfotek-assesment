@@ -2,6 +2,9 @@ CREATE TABLE IF NOT EXISTS tests (
   id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
   subject TEXT NOT NULL DEFAULT 'General',
+  course TEXT NOT NULL DEFAULT '',
+  level TEXT NOT NULL DEFAULT '',
+  topics JSONB NOT NULL DEFAULT '[]'::jsonb,
   test_code TEXT UNIQUE NOT NULL,
   duration_minutes INT NOT NULL DEFAULT 30
 );

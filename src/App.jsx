@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import JoinCard from './components/JoinCard'
@@ -81,6 +81,14 @@ function App() {
     setAdminPassword('')
     setAdminError('')
   }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('admin') === '1') {
+      setShowAdminAuth(true)
+    }
+  }, [])
 
   const handleAdminAuth = (e) => {
     e.preventDefault()

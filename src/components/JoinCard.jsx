@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function JoinCard({ onStart }) {
   const [name, setName] = useState('');
@@ -8,6 +8,42 @@ export default function JoinCard({ onStart }) {
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
   const [testInfo, setTestInfo] = useState(null);
+  const autoStarted = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || autoStarted.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const n = params.get('name');
+    const r = params.get('reg');
+    const c = params.get('code');
+    const auto = params.get('auto');
+    if (n) setName(n);
+    if (r) setRegisterId(r);
+    if (c) setCode(c);
+    if (auto === '1' && n && r && c) {
+      autoStarted.current = true;
+      (async () => {
+        setLoading(true);
+        try {
+          const res = await fetch('/api/tests?code=' + encodeURIComponent(c.trim()));
+          if (res.ok) {
+            const data = await res.json();
+            setTestInfo(data);
+            setVerified(true);
+            onStart({ student: { name: n.trim(), registerId: r.trim() }, test: data, action: 'test' });
+          } else {
+            const d = await res.json();
+            setError(d.error || 'Invalid test code');
+          }
+        } catch {
+          setError('Failed to connect. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleVerify = async (e) => {
     e.preventDefault();

@@ -5,17 +5,34 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { code } = req.query;
-  if (!code) {
-    return res.status(400).json({ error: 'Test code is required' });
-  }
+  const { code, action, courses } = req.query;
 
   try {
     const sql = neon(process.env.DATABASE_URL);
+
+    if (action === 'list') {
+      if (!courses) {
+        return res.status(400).json({ error: 'Courses are required' });
+      }
+      const list = courses.split(',').map((c) => c.trim()).filter(Boolean);
+      if (list.length === 0) {
+        return res.status(400).json({ error: 'Courses are required' });
+      }
+      const tests = await sql(
+        'SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests WHERE course = ANY($1::text[]) ORDER BY id',
+        [list]
+      );
+      return res.status(200).json({ tests });
+    }
+
+    if (!code) {
+      return res.status(400).json({ error: 'Test code is required' });
+    }
+
     const upperCode = code.toUpperCase();
 
     const testResult = await sql(
-      'SELECT id, title, subject, test_code, duration_minutes FROM tests WHERE test_code = $1',
+      'SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests WHERE test_code = $1',
       [upperCode]
     );
 

@@ -5,7 +5,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const tests = await sql('SELECT id, title, subject, test_code, duration_minutes FROM tests ORDER BY id');
+      const tests = await sql('SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests ORDER BY id');
       const testsWithQuestions = [];
       for (const t of tests) {
         const questions = await sql(
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      const { title, test_code, duration_minutes, questions } = req.body;
+      const { title, test_code, duration_minutes, questions, subject, course, level, topics } = req.body;
 
       if (!title || !test_code || !questions || questions.length === 0) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -35,8 +35,8 @@ export default async function handler(req, res) {
       }
 
       const testResult = await sql(
-        'INSERT INTO tests (title, subject, test_code, duration_minutes) VALUES ($1, $2, $3, $4) RETURNING id',
-        [title, 'General', test_code.toUpperCase(), duration_minutes || 30]
+        'INSERT INTO tests (title, subject, course, level, topics, test_code, duration_minutes) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7) RETURNING id',
+        [title, subject || course || 'General', course || '', level || '', JSON.stringify(topics || []), test_code.toUpperCase(), duration_minutes || 30]
       );
       const testId = testResult[0].id;
 

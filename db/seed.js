@@ -8,6 +8,9 @@ async function seed() {
       id SERIAL PRIMARY KEY,
       title TEXT NOT NULL,
       subject TEXT NOT NULL DEFAULT 'General',
+      course TEXT NOT NULL DEFAULT '',
+      level TEXT NOT NULL DEFAULT '',
+      topics JSONB NOT NULL DEFAULT '[]'::jsonb,
       test_code TEXT UNIQUE NOT NULL,
       duration_minutes INT NOT NULL DEFAULT 30
     )
@@ -41,8 +44,8 @@ async function seed() {
   await sql('DELETE FROM tests');
 
   const testResult = await sql(
-    `INSERT INTO tests (title, subject, test_code, duration_minutes)
-     VALUES ('Aptitude Test - Round 1', 'General Aptitude', 'APT01', 30)
+    `INSERT INTO tests (title, subject, course, level, topics, test_code, duration_minutes)
+     VALUES ('Aptitude Test - Round 1', 'General Aptitude', 'General', 'Beginner', '[]'::jsonb, 'APT01', 30)
      RETURNING id`
   );
   const testId = testResult[0].id;

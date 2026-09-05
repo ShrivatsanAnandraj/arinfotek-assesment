@@ -16,6 +16,11 @@ export default function AdminPanel() {
   const [testTitle, setTestTitle] = useState('');
   const [testCode, setTestCode] = useState('');
   const [testDuration, setTestDuration] = useState(30);
+  const [testSubject, setTestSubject] = useState('');
+  const [testCourse, setTestCourse] = useState('');
+  const [testLevel, setTestLevel] = useState('');
+  const [testTopics, setTestTopics] = useState('');
+  const [returnUrl, setReturnUrl] = useState('');
   const [questions, setQuestions] = useState([
     { question_text: '', options: ['', '', '', ''], correct_answer: 0 },
   ]);
@@ -75,6 +80,23 @@ export default function AdminPanel() {
       setLoadingScores(false);
     }
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('test_code');
+    const subject = params.get('subject');
+    const course = params.get('course');
+    const level = params.get('level');
+    const topics = params.get('topics');
+    const ret = params.get('return');
+    if (code) setTestCode(code);
+    if (subject) setTestSubject(subject);
+    if (course) setTestCourse(course);
+    if (level) setTestLevel(level);
+    if (topics) setTestTopics(topics);
+    if (ret) setReturnUrl(decodeURIComponent(ret));
+  }, []);
 
   useEffect(() => {
     if (view === 'scores') {
@@ -426,15 +448,27 @@ export default function AdminPanel() {
           title: testTitle,
           test_code: testCode.toUpperCase(),
           duration_minutes: Number(testDuration),
+          subject: testSubject || testCourse || 'General',
+          course: testCourse,
+          level: testLevel,
+          topics: testTopics.split(',').map(t => t.trim()).filter(Boolean),
           questions,
         }),
       });
       const data = await res.json();
       if (res.ok) {
+        if (returnUrl) {
+          window.location.href = returnUrl;
+          return;
+        }
         setMessage(`Success! Test "${testCode.toUpperCase()}" created with ${questions.length} questions.`);
         setTestTitle('');
         setTestCode('');
         setTestDuration(30);
+        setTestSubject('');
+        setTestCourse('');
+        setTestLevel('');
+        setTestTopics('');
         setQuestions([{ question_text: '', options: ['', '', '', ''], correct_answer: 0 }]);
       } else {
         setMessage('Error: ' + (data.error || 'Failed to create test'));
@@ -1182,6 +1216,38 @@ export default function AdminPanel() {
                   value={testTitle}
                   onChange={(e) => setTestTitle(e.target.value)}
                   placeholder="e.g. Aptitude Test - Round 1"
+                  className="w-full px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Course / Subject</label>
+                  <input
+                    type="text"
+                    value={testCourse}
+                    onChange={(e) => setTestCourse(e.target.value)}
+                    placeholder="e.g. python"
+                    className="w-full px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Level</label>
+                  <input
+                    type="text"
+                    value={testLevel}
+                    onChange={(e) => setTestLevel(e.target.value)}
+                    placeholder="e.g. Beginner"
+                    className="w-full px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Topics <span className="text-slate-400 font-normal">(comma separated)</span></label>
+                <input
+                  type="text"
+                  value={testTopics}
+                  onChange={(e) => setTestTopics(e.target.value)}
+                  placeholder="e.g. Arrays, Loops, Functions"
                   className="w-full px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
