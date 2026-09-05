@@ -5,15 +5,15 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const tests = await sql('SELECT id, title, test_code, duration_minutes FROM tests ORDER BY id');
+      const tests = await sql`SELECT id, title, test_code, duration_minutes FROM tests ORDER BY id`;
 
-      const attempts = await sql(`
+      const attempts = await sql`
         SELECT a.id, a.student_name, a.student_register_id, a.score, a.total, a.submitted_at,
                t.title as test_title, t.test_code
         FROM attempts a
         JOIN tests t ON a.test_id = t.id
         ORDER BY a.submitted_at DESC
-      `);
+      `;
 
       return res.status(200).json({ tests, attempts });
     } catch (error) {
@@ -27,20 +27,20 @@ export default async function handler(req, res) {
       const { action, id, test_code } = req.body;
 
       if (action === 'single' && id) {
-        await sql('DELETE FROM attempts WHERE id = $1', [id]);
+        await sql`DELETE FROM attempts WHERE id = ${id}`;
         return res.status(200).json({ success: true });
       }
 
       if (action === 'by_test' && test_code) {
-        const testResult = await sql('SELECT id FROM tests WHERE test_code = $1', [test_code.toUpperCase()]);
+        const testResult = await sql`SELECT id FROM tests WHERE test_code = ${test_code.toUpperCase()}`;
         if (testResult.length > 0) {
-          await sql('DELETE FROM attempts WHERE test_id = $1', [testResult[0].id]);
+          await sql`DELETE FROM attempts WHERE test_id = ${testResult[0].id}`;
         }
         return res.status(200).json({ success: true });
       }
 
       if (action === 'all') {
-        await sql('DELETE FROM attempts');
+        await sql`DELETE FROM attempts`;
         return res.status(200).json({ success: true });
       }
 

@@ -56,12 +56,12 @@ export default async function handler(req, res) {
       const { test_code, action } = req.query;
       
       if (action === 'responses') {
-        const responses = await sql(`
+        const responses = await sql`
           SELECT sr.*, s.course, s.trainee, s.template_name, s.questions
           FROM survey_responses sr
           JOIN surveys s ON sr.survey_id = s.id
           ORDER BY sr.submitted_at DESC
-        `);
+        `;
         const parsed = responses.map(r => ({
           ...r,
           answers: typeof r.answers === 'string' ? JSON.parse(r.answers) : r.answers,
@@ -71,10 +71,7 @@ export default async function handler(req, res) {
       }
       
       if (test_code) {
-        const surveys = await sql(
-          'SELECT * FROM surveys WHERE test_code = $1 ORDER BY created_at DESC',
-          [test_code.toUpperCase()]
-        );
+        const surveys = await sql`SELECT * FROM surveys WHERE test_code = ${test_code.toUpperCase()} ORDER BY created_at DESC`;
         const parsed = surveys.map(s => ({
           ...s,
           questions: typeof s.questions === 'string' ? JSON.parse(s.questions) : s.questions
@@ -90,7 +87,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ templates: details });
       }
 
-      const surveys = await sql('SELECT * FROM surveys ORDER BY created_at DESC');
+      const surveys = await sql`SELECT * FROM surveys ORDER BY created_at DESC`;
       const parsedAll = surveys.map(s => ({
         ...s,
         questions: typeof s.questions === 'string' ? JSON.parse(s.questions) : s.questions
@@ -123,10 +120,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Questions are required' });
         }
 
-        const result = await sql(
-          'INSERT INTO surveys (test_code, course, trainee, no_of_days, template_name, questions) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-          [test_code.toUpperCase(), course, trainee, no_of_days, template_name || 'Custom', JSON.stringify(surveyQuestions)]
-        );
+        const result = await sql`INSERT INTO surveys (test_code, course, trainee, no_of_days, template_name, questions) VALUES (${test_code.toUpperCase()}, ${course}, ${trainee}, ${no_of_days}, ${template_name || 'Custom'}, ${JSON.stringify(surveyQuestions)}::jsonb) RETURNING *`;
 
         return res.status(201).json({ survey: result[0] });
       }
@@ -138,10 +132,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const result = await sql(
-          'INSERT INTO survey_responses (survey_id, student_name, student_register_id, test_code, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-          [survey_id, student_name, student_register_id, test_code.toUpperCase(), JSON.stringify(answers)]
-        );
+        const result = await sql`INSERT INTO survey_responses (survey_id, student_name, student_register_id, test_code, answers) VALUES (${survey_id}, ${student_name}, ${student_register_id}, ${test_code.toUpperCase()}, ${JSON.stringify(answers)}::jsonb) RETURNING *`;
 
         return res.status(201).json({ response: result[0] });
       }
@@ -169,17 +160,17 @@ export default async function handler(req, res) {
       const { action, id, test_code } = req.body;
 
       if (action === 'single' && id) {
-        await sql('DELETE FROM survey_responses WHERE id = $1', [id]);
+        await sql`DELETE FROM survey_responses WHERE id = ${id}`;
         return res.status(200).json({ success: true });
       }
 
       if (action === 'by_test' && test_code) {
-        await sql('DELETE FROM survey_responses WHERE test_code = $1', [test_code.toUpperCase()]);
+        await sql`DELETE FROM survey_responses WHERE test_code = ${test_code.toUpperCase()}`;
         return res.status(200).json({ success: true });
       }
 
       if (action === 'all') {
-        await sql('DELETE FROM survey_responses');
+        await sql`DELETE FROM survey_responses`;
         return res.status(200).json({ success: true });
       }
 

@@ -18,10 +18,7 @@ export default async function handler(req, res) {
       if (list.length === 0) {
         return res.status(400).json({ error: 'Courses are required' });
       }
-      const tests = await sql(
-        "SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests WHERE (course = ANY($1::text[]) OR course = '' OR course = 'General') ORDER BY id",
-        [list]
-      );
+      const tests = await sql`SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests WHERE (course = ANY(${list}::text[]) OR course = '' OR course = 'General') ORDER BY id`;
       return res.status(200).json({ tests });
     }
 
@@ -31,10 +28,7 @@ export default async function handler(req, res) {
 
     const upperCode = code.toUpperCase();
 
-    const testResult = await sql(
-      'SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests WHERE test_code = $1',
-      [upperCode]
-    );
+    const testResult = await sql`SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests WHERE test_code = ${upperCode}`;
 
     if (testResult.length === 0) {
       return res.status(404).json({ error: 'Invalid test code' });
@@ -42,10 +36,7 @@ export default async function handler(req, res) {
 
     const test = testResult[0];
 
-    const questions = await sql(
-      'SELECT id, question_text, options FROM questions WHERE test_id = $1 ORDER BY id',
-      [test.id]
-    );
+    const questions = await sql`SELECT id, question_text, options FROM questions WHERE test_id = ${test.id} ORDER BY id`;
 
     return res.status(200).json({ test, questions });
   } catch (error) {

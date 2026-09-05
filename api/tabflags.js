@@ -11,10 +11,7 @@ export default async function handler(req, res) {
         const { id } = req.body || {};
         if (!id) return res.status(400).json({ error: 'Flag id is required' });
 
-        const updated = await sql(
-          "UPDATE tab_flags SET status = 'approved', resolved_at = NOW() WHERE id = $1 RETURNING id, status, test_code, student_register_id",
-          [id]
-        );
+        const updated = await sql`UPDATE tab_flags SET status = 'approved', resolved_at = NOW() WHERE id = ${id} RETURNING id, status, test_code, student_register_id`;
 
         if (updated.length === 0) {
           return res.status(404).json({ error: 'Flag not found' });
@@ -29,19 +26,13 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'test_code and student_register_id are required' });
       }
 
-      const existing = await sql(
-        "SELECT id, status FROM tab_flags WHERE test_code = $1 AND student_register_id = $2 AND status = 'flagged' LIMIT 1",
-        [test_code, student_register_id]
-      );
+      const existing = await sql`SELECT id, status FROM tab_flags WHERE test_code = ${test_code} AND student_register_id = ${student_register_id} AND status = 'flagged' LIMIT 1`;
 
       if (existing.length > 0) {
         return res.status(200).json({ flag: existing[0], already: true });
       }
 
-      const created = await sql(
-        "INSERT INTO tab_flags (test_code, student_register_id, student_name, reason) VALUES ($1, $2, $3, $4) RETURNING id, status",
-        [test_code, student_register_id, student_name || '', reason || 'Tabs changing found']
-      );
+      const created = await sql`INSERT INTO tab_flags (test_code, student_register_id, student_name, reason) VALUES (${test_code}, ${student_register_id}, ${student_name || ''}, ${reason || 'Tabs changing found'}) RETURNING id, status`;
 
       return res.status(201).json({ flag: created[0] });
     }
@@ -54,18 +45,13 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'test_code and student_register_id are required' });
         }
 
-        const rows = await sql(
-          "SELECT id, status FROM tab_flags WHERE test_code = $1 AND student_register_id = $2 AND status IN ('flagged', 'approved') ORDER BY id DESC LIMIT 1",
-          [test_code, student_register_id]
-        );
+        const rows = await sql`SELECT id, status FROM tab_flags WHERE test_code = ${test_code} AND student_register_id = ${student_register_id} AND status IN ('flagged', 'approved') ORDER BY id DESC LIMIT 1`;
 
         return res.status(200).json({ status: rows.length > 0 ? rows[0].status : 'none' });
       }
 
       if (action === 'list') {
-        const flags = await sql(
-          "SELECT id, test_code, student_register_id, student_name, reason, status, created_at, resolved_at FROM tab_flags WHERE status = 'flagged' ORDER BY id DESC"
-        );
+        const flags = await sql`SELECT id, test_code, student_register_id, student_name, reason, status, created_at, resolved_at FROM tab_flags WHERE status = 'flagged' ORDER BY id DESC`;
         return res.status(200).json({ flags });
       }
 

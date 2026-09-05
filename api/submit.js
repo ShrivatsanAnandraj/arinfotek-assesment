@@ -13,10 +13,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const correctRows = await sql(
-      'SELECT id, correct_answer FROM questions WHERE test_id = $1',
-      [testId]
-    );
+    const correctRows = await sql`SELECT id, correct_answer FROM questions WHERE test_id = ${testId}`;
 
     let score = 0;
     const total = correctRows.length;
@@ -30,15 +27,9 @@ export default async function handler(req, res) {
     const percentage = Math.round((score / total) * 100);
     const passed = percentage >= 40;
 
-    await sql(
-      'INSERT INTO attempts (test_id, student_name, student_register_id, score, total, answers) VALUES ($1, $2, $3, $4, $5, $6)',
-      [testId, studentName, studentRegisterId, score, total, JSON.stringify(answers)]
-    );
+    await sql`INSERT INTO attempts (test_id, student_name, student_register_id, score, total, answers) VALUES (${testId}, ${studentName}, ${studentRegisterId}, ${score}, ${total}, ${JSON.stringify(answers)}::jsonb)`;
 
-    const reviewRows = await sql(
-      'SELECT id, question_text, options, correct_answer FROM questions WHERE test_id = $1 ORDER BY id',
-      [testId]
-    );
+    const reviewRows = await sql`SELECT id, question_text, options, correct_answer FROM questions WHERE test_id = ${testId} ORDER BY id`;
 
     const review = reviewRows.map((row) => ({
       id: row.id,

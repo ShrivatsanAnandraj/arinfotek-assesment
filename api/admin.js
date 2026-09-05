@@ -5,13 +5,10 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const tests = await sql('SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests ORDER BY id');
+      const tests = await sql`SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests ORDER BY id`;
       const testsWithQuestions = [];
       for (const t of tests) {
-        const questions = await sql(
-          'SELECT id, question_text, options, correct_answer FROM questions WHERE test_id = $1 ORDER BY id',
-          [t.id]
-        );
+        const questions = await sql`SELECT id, question_text, options, correct_answer FROM questions WHERE test_id = ${t.id} ORDER BY id`;
         testsWithQuestions.push({ ...t, questions });
       }
       return res.status(200).json({ tests: testsWithQuestions });
@@ -29,22 +26,16 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      const existing = await sql('SELECT id FROM tests WHERE test_code = $1', [test_code.toUpperCase()]);
+      const existing = await sql`SELECT id FROM tests WHERE test_code = ${test_code.toUpperCase()}`;
       if (existing.length > 0) {
         return res.status(400).json({ error: 'Test code already exists' });
       }
 
-      const testResult = await sql(
-        'INSERT INTO tests (title, subject, course, level, topics, test_code, duration_minutes) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7) RETURNING id',
-        [title, subject || course || 'General', course || '', level || '', JSON.stringify(topics || []), test_code.toUpperCase(), duration_minutes || 30]
-      );
+      const testResult = await sql`INSERT INTO tests (title, subject, course, level, topics, test_code, duration_minutes) VALUES (${title}, ${subject || course || 'General'}, ${course || ''}, ${level || ''}, ${JSON.stringify(topics || [])}::jsonb, ${test_code.toUpperCase()}, ${duration_minutes || 30}) RETURNING id`;
       const testId = testResult[0].id;
 
       for (const q of questions) {
-        await sql(
-          'INSERT INTO questions (test_id, question_text, options, correct_answer) VALUES ($1, $2, $3, $4)',
-          [testId, q.question_text, JSON.stringify(q.options), q.correct_answer]
-        );
+        await sql`INSERT INTO questions (test_id, question_text, options, correct_answer) VALUES (${testId}, ${q.question_text}, ${JSON.stringify(q.options)}::jsonb, ${q.correct_answer})`;
       }
 
       return res.status(200).json({ success: true, testId });
@@ -62,17 +53,17 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Test code is required' });
       }
 
-      const testResult = await sql('SELECT id FROM tests WHERE test_code = $1', [test_code.toUpperCase()]);
+      const testResult = await sql`SELECT id FROM tests WHERE test_code = ${test_code.toUpperCase()}`;
       if (testResult.length === 0) {
         return res.status(404).json({ error: 'Test not found' });
       }
 
       const testId = testResult[0].id;
-      await sql('DELETE FROM questions WHERE test_id = $1', [testId]);
-      await sql('DELETE FROM attempts WHERE test_id = $1', [testId]);
-      await sql('DELETE FROM survey_responses WHERE test_code = $1', [test_code.toUpperCase()]);
-      await sql('DELETE FROM surveys WHERE test_code = $1', [test_code.toUpperCase()]);
-      await sql('DELETE FROM tests WHERE id = $1', [testId]);
+      await sql`DELETE FROM questions WHERE test_id = ${testId}`;
+      await sql`DELETE FROM attempts WHERE test_id = ${testId}`;
+      await sql`DELETE FROM survey_responses WHERE test_code = ${test_code.toUpperCase()}`;
+      await sql`DELETE FROM surveys WHERE test_code = ${test_code.toUpperCase()}`;
+      await sql`DELETE FROM tests WHERE id = ${testId}`;
 
       return res.status(200).json({ success: true });
     } catch (error) {
