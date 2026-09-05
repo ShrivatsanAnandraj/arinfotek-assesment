@@ -64,6 +64,7 @@ export default function AdminPanel() {
   const [showDataAnalysis, setShowDataAnalysis] = useState(false);
   const [dataAnalysisTestCode, setDataAnalysisTestCode] = useState('');
   const [dataAnalysisResult, setDataAnalysisResult] = useState(null);
+  const [flags, setFlags] = useState([]);
 
   const fetchScores = async () => {
     setLoadingScores(true);
@@ -97,6 +98,34 @@ export default function AdminPanel() {
     if (topics) setTestTopics(topics);
     if (ret) setReturnUrl(decodeURIComponent(ret));
   }, []);
+
+  const fetchFlags = async () => {
+    try {
+      const res = await fetch('/api/tabflags?action=list');
+      const data = await res.json();
+      if (res.ok) setFlags(data.flags || []);
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchFlags();
+    const id = setInterval(fetchFlags, 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  const approveFlag = async (id) => {
+    try {
+      const res = await fetch('/api/tabflags?action=resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFlags((prev) => prev.filter((f) => f.id !== id));
+      }
+    } catch {}
+  };
 
   useEffect(() => {
     if (view === 'scores') {
@@ -669,13 +698,18 @@ export default function AdminPanel() {
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="p-2 rounded-lg hover:bg-slate-100 transition text-slate-600"
+                className="p-2 rounded-lg hover:bg-slate-100 transition text-slate-600 relative"
               >
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                   <circle cx="12" cy="5" r="2" />
                   <circle cx="12" cy="12" r="2" />
                   <circle cx="12" cy="19" r="2" />
                 </svg>
+                {flags.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">
+                    {flags.length}
+                  </span>
+                )}
               </button>
               {menuOpen && (
                 <div className="absolute right-0 top-12 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-56 z-10">
@@ -718,6 +752,19 @@ export default function AdminPanel() {
                     onMouseLeave={(e) => e.target.style.color = ''}
                   >
                     View Scores
+                  </button>
+                  <button
+                    onClick={() => { setView('tabflags'); setMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-primary transition-colors duration-200"
+                    onMouseEnter={(e) => e.target.style.color = '#1e5aa8'}
+                    onMouseLeave={(e) => e.target.style.color = ''}
+                  >
+                    Tab Flags
+                    {flags.length > 0 && (
+                      <span className="inline-flex items-center justify-center ml-2 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black align-middle">
+                        {flags.length}
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={() => { setView('createsurvey'); setMenuOpen(false); }}
@@ -882,6 +929,62 @@ export default function AdminPanel() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {view === 'tabflags' && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => setView('create')}
+                className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-primary transition"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+              <h1 className="text-2xl font-black text-slate-800">Tab Flags</h1>
+              <button
+                onClick={fetchFlags}
+                className="px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark transition"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {flags.length === 0 ? (
+              <div className="text-center py-10 text-slate-500">
+                <p className="text-sm">No flagged attempts right now.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[65vh] overflow-y-auto">
+                {flags.map((flag) => (
+                  <div key={flag.id} className="bg-slate-50 rounded-xl border border-slate-100 p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-primary text-white text-xs font-bold rounded-lg px-2.5 py-1 font-mono shrink-0">{flag.test_code}</span>
+                        <span className="text-sm font-bold text-slate-800 truncate">{flag.student_name}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Reg ID: <span className="font-mono">{flag.student_register_id}</span> &middot; {flag.reason} &middot; {new Date(flag.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => approveFlag(flag.id)}
+                      className="shrink-0 px-4 py-2 rounded-lg text-xs font-bold bg-green-500 text-white hover:bg-green-600 transition"
+                    >
+                      Continue
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

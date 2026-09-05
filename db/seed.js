@@ -39,6 +39,19 @@ async function seed() {
     )
   `);
 
+  await sql(`
+    CREATE TABLE IF NOT EXISTS tab_flags (
+      id SERIAL PRIMARY KEY,
+      test_code TEXT NOT NULL,
+      student_register_id TEXT NOT NULL,
+      student_name TEXT NOT NULL,
+      reason TEXT NOT NULL DEFAULT 'Tabs changing found',
+      status TEXT NOT NULL DEFAULT 'flagged',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      resolved_at TIMESTAMPTZ
+    )
+  `);
+
   await sql('DELETE FROM questions');
   await sql('DELETE FROM attempts');
   await sql('DELETE FROM tests');

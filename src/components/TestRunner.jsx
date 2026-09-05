@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export default function TestRunner({ testData, studentInfo, onSubmit }) {
   const { test, questions } = testData;
@@ -8,6 +8,8 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
   const [answers, setAnswers] = useState({});
   const [secondsLeft, setSecondsLeft] = useState(test.duration_minutes * 60);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [frozen, setFrozen] = useState(false);
+  const frozenRef = useRef(false);
 
   const submitTest = useCallback(() => {
     onSubmit({
@@ -22,13 +24,67 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
   }, [answers, total, test.id, studentInfo, onSubmit]);
 
   useEffect(() => {
+    if (frozen) return;
     if (secondsLeft <= 0) {
       submitTest();
       return;
     }
     const timer = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearInterval(timer);
-  }, [secondsLeft, submitTest]);
+  }, [secondsLeft, submitTest, frozen]);
+
+  const flagViolation = useCallback(() => {
+    if (frozenRef.current) return;
+    fetch('/api/tabflags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        test_code: test.test_code,
+        student_register_id: studentInfo.registerId,
+        student_name: studentInfo.name,
+        reason: 'Tabs changing found',
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.flag) {
+          frozenRef.current = true;
+          setFrozen(true);
+        }
+      })
+      .catch(() => {});
+  }, [test.test_code, studentInfo.registerId, studentInfo.name]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) flagViolation();
+    };
+    const handleBlur = () => flagViolation();
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [flagViolation]);
+
+  useEffect(() => {
+    if (!frozen) return;
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/tabflags?action=status&test_code=${test.test_code}&student_register_id=${studentInfo.registerId}`
+        );
+        const data = await res.json();
+        if (data.status === 'approved') {
+          frozenRef.current = false;
+          setFrozen(false);
+        }
+      } catch (e) {}
+    }, 2000);
+    return () => clearInterval(poll);
+  }, [frozen, test.test_code, studentInfo.registerId]);
 
   const selectAnswer = (questionId, optionIndex) => {
     setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
@@ -167,6 +223,28 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
           </div>
         </div>
       </div>
+
+      {frozen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 max-w-md w-full mx-auto text-center">
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-black text-slate-800 mb-2">Tabs changing found</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Your test has been paused because a tab or window change was detected. Your answers are safe and your timer is frozen.
+            </p>
+            <div className="mt-5 flex items-center justify-center gap-2 text-xs text-slate-400">
+              <svg className="w-4 h-4 animate-spin text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" d="M4 12a8 8 0 018-8v4" />
+              </svg>
+              Waiting for admin approval to continue...
+            </div>
+          </div>
+        </div>
+      )}
 
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto p-4">

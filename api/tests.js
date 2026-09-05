@@ -19,7 +19,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Courses are required' });
       }
       const tests = await sql(
-        'SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests WHERE course = ANY($1::text[]) ORDER BY id',
+        "SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests WHERE (course = ANY($1::text[]) OR course = '' OR course = 'General') ORDER BY id",
         [list]
       );
       return res.status(200).json({ tests });
