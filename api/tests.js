@@ -18,7 +18,8 @@ export default async function handler(req, res) {
       if (list.length === 0) {
         return res.status(400).json({ error: 'Courses are required' });
       }
-      const tests = await sql`SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests WHERE (course = ANY(${list}::text[]) OR course = '' OR course = 'General') ORDER BY id`;
+      const patterns = list.map((c) => `%${c}%`);
+      const tests = await sql`SELECT id, title, subject, course, level, topics, test_code, duration_minutes FROM tests WHERE (course = ANY(${list}::text[]) OR title ILIKE ANY(${patterns}::text[])) ORDER BY id`;
       return res.status(200).json({ tests });
     }
 
