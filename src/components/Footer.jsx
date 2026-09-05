@@ -36,7 +36,7 @@ function Footer({ onAdminClick, screen }) {
         <span>&copy; 2025 AR INFOTEK &ndash; All rights reserved.</span>
         <button
           onClick={onAdminClick}
-          className="text-slate-500 hover:text-white transition underline"
+          className="text-primary hover:text-blue-900 transition underline font-semibold"
         >
           {screen === 'admin' ? 'Back to Test' : 'Admin'}
         </button>
