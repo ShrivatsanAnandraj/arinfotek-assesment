@@ -26,13 +26,19 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'test_code and student_register_id are required' });
       }
 
-      const existing = await sql`SELECT id, status FROM tab_flags WHERE test_code = ${test_code} AND student_register_id = ${student_register_id} AND status = 'flagged' LIMIT 1`;
+      const now = new Date().toISOString();
+
+      const existing = await sql`SELECT id, status, violation_count, violations FROM tab_flags WHERE test_code = ${test_code} AND student_register_id = ${student_register_id} AND status = 'flagged' LIMIT 1`;
 
       if (existing.length > 0) {
-        return res.status(200).json({ flag: existing[0], already: true });
+        const row = existing[0];
+        const violations = Array.isArray(row.violations) ? row.violations : [];
+        violations.push(now);
+        const updated = await sql`UPDATE tab_flags SET violation_count = ${(row.violation_count || 0) + 1}, violations = ${JSON.stringify(violations)}::jsonb WHERE id = ${row.id} RETURNING id, status, violation_count`;
+        return res.status(200).json({ flag: updated[0], already: true });
       }
 
-      const created = await sql`INSERT INTO tab_flags (test_code, student_register_id, student_name, reason) VALUES (${test_code}, ${student_register_id}, ${student_name || ''}, ${reason || 'Tabs changing found'}) RETURNING id, status`;
+      const created = await sql`INSERT INTO tab_flags (test_code, student_register_id, student_name, reason, violation_count, violations) VALUES (${test_code}, ${student_register_id}, ${student_name || ''}, ${reason || 'Tabs changing found'}, 1, ${JSON.stringify([now])}::jsonb) RETURNING id, status, violation_count`;
 
       return res.status(201).json({ flag: created[0] });
     }
@@ -51,7 +57,7 @@ export default async function handler(req, res) {
       }
 
       if (action === 'list') {
-        const flags = await sql`SELECT id, test_code, student_register_id, student_name, reason, status, created_at, resolved_at FROM tab_flags WHERE status = 'flagged' ORDER BY id DESC`;
+        const flags = await sql`SELECT id, test_code, student_register_id, student_name, reason, status, violation_count, violations, created_at, resolved_at FROM tab_flags WHERE status = 'flagged' ORDER BY id DESC`;
         return res.status(200).json({ flags });
       }
 

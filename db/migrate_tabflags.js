@@ -15,7 +15,9 @@ async function migrate() {
       resolved_at TIMESTAMPTZ
     )
   `);
-  console.log('Migrated: created tab_flags table');
+  await sql("ALTER TABLE tab_flags ADD COLUMN IF NOT EXISTS violation_count INT NOT NULL DEFAULT 1");
+  await sql("ALTER TABLE tab_flags ADD COLUMN IF NOT EXISTS violations JSONB NOT NULL DEFAULT '[]'::jsonb");
+  console.log('Migrated: created tab_flags table and added violation tracking');
   process.exit(0);
 }
 

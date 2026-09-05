@@ -34,7 +34,6 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
   }, [secondsLeft, submitTest, frozen]);
 
   const flagViolation = useCallback(() => {
-    if (frozenRef.current) return;
     fetch('/api/tabflags', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -47,7 +46,7 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.flag) {
+        if (data.flag && !frozenRef.current) {
           frozenRef.current = true;
           setFrozen(true);
         }

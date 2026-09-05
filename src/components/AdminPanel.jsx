@@ -972,8 +972,13 @@ export default function AdminPanel() {
                         <span className="text-sm font-bold text-slate-800 truncate">{flag.student_name}</span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1">
-                        Reg ID: <span className="font-mono">{flag.student_register_id}</span> &middot; {flag.reason} &middot; {new Date(flag.created_at).toLocaleString()}
+                        Reg ID: <span className="font-mono">{flag.student_register_id}</span> &middot; {flag.reason}{flag.violation_count > 1 ? ` (${flag.violation_count} times)` : ''} &middot; {new Date(flag.created_at).toLocaleString()}
                       </p>
+                      {(flag.violations || []).length > 0 && (
+                        <p className="text-xs text-red-500 mt-1 font-semibold">
+                          Switched away at: {(flag.violations || []).map((v, i) => new Date(v).toLocaleTimeString()).join(', ')}
+                        </p>
+                      )}
                     </div>
                     <button
                       onClick={() => approveFlag(flag.id)}

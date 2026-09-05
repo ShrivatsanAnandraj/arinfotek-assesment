@@ -47,6 +47,8 @@ async function seed() {
       student_name TEXT NOT NULL,
       reason TEXT NOT NULL DEFAULT 'Tabs changing found',
       status TEXT NOT NULL DEFAULT 'flagged',
+      violation_count INT NOT NULL DEFAULT 1,
+      violations JSONB NOT NULL DEFAULT '[]'::jsonb,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       resolved_at TIMESTAMPTZ
     )
