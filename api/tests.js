@@ -41,7 +41,7 @@ const ALL_TOPICS = [
 const DEPTH_RULES = {
   basic: 'Question depth: NOT too deep - every question must be simple, direct and introductory, testing only basic understanding of each topic.',
   intermediate:
-    'Question depth: a little depth - questions should combine a couple of concepts and include short code traces, but stay moderately challenging.',
+    'Question depth: a little depth - questions should be moderately challenging, combining only 2 related concepts with short code traces, and must NOT use advanced Python topics such as decorators, generators, async/await, comprehensions, or modules/packages.',
   advanced:
     'Question depth: FULL depth - questions must be advanced, covering multi-step code execution, output tracing, edge cases and reasoning.',
 };
