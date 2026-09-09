@@ -31,7 +31,7 @@ export default function JoinCard({ onStart }) {
             const data = await res.json();
             setTestInfo(data);
             setVerified(true);
-            onStart({ student: { name: n.trim(), registerId: r.trim() }, test: data, action: 'test' });
+            startGeneratedPaper({ name: n.trim(), registerId: r.trim() }, data);
           } else {
             const d = await res.json();
             setError(d.error || 'Invalid test code');
@@ -74,17 +74,12 @@ export default function JoinCard({ onStart }) {
     }
   };
 
-  const handleChoice = async (choice) => {
-    const student = { name: name.trim(), registerId: registerId.trim() };
-    if (choice === 'survey') {
-      onStart({ student, test: testInfo, action: 'survey' });
-      return;
-    }
+  const startGeneratedPaper = async (student, test = testInfo) => {
     setGenerating(true);
     setError('');
     try {
       const res = await fetch(
-        '/api/tests?action=paper&code=' + encodeURIComponent(testInfo.test?.test_code || '') +
+        '/api/tests?action=paper&code=' + encodeURIComponent(test?.test?.test_code || '') +
         '&name=' + encodeURIComponent(student.name) +
         '&reg=' + encodeURIComponent(student.registerId)
       );
@@ -98,6 +93,15 @@ export default function JoinCard({ onStart }) {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleChoice = async (choice) => {
+    const student = { name: name.trim(), registerId: registerId.trim() };
+    if (choice === 'survey') {
+      onStart({ student, test: testInfo, action: 'survey' });
+      return;
+    }
+    await startGeneratedPaper(student, testInfo);
   };
 
   if (verified && testInfo) {

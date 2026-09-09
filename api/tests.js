@@ -38,6 +38,14 @@ const ALL_TOPICS = [
   ]),
 ];
 
+const DEPTH_RULES = {
+  basic: 'Question depth: NOT too deep - every question must be simple, direct and introductory, testing only basic understanding of each topic.',
+  intermediate:
+    'Question depth: a little depth - questions should combine a couple of concepts and include short code traces, but stay moderately challenging.',
+  advanced:
+    'Question depth: FULL depth - questions must be advanced, covering multi-step code execution, output tracing, edge cases and reasoning.',
+};
+
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 const GEMINI_FALLBACK_MODEL = 'gemini-3.1-flash-lite-preview';
 
@@ -62,6 +70,8 @@ function buildPrompt(levelKey, topics, count) {
   const topicList =
     topics.filter((t) => typeof t === 'string' && t.trim()).join(', ') || ALL_TOPICS.join(', ');
   return `Generate a ${count} mark MCQ test paper for Python ${levelKey} level. Include all these topics: ${topicList}.
+
+${DEPTH_RULES[levelKey] || DEPTH_RULES.basic}
 
 Each question must:
 - Be clear, specific and self-contained (no external code files).
