@@ -136,7 +136,7 @@ export default function JoinCard({ onStart }) {
                 <div className="text-xs text-slate-500">
                   {generating
                     ? 'Creating a fresh set of questions for you'
-                    : `${testInfo.test?.title} &mdash; ${testInfo.questions?.length || 10} questions, generated fresh each time`}
+                    : `${testInfo.test?.title} &mdash; 25 questions, generated fresh each time`}
                 </div>
               </div>
             </button>

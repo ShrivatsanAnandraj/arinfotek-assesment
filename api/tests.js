@@ -1,7 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 
 const LEVEL_TOPICS = {
-  Fundamentals: [
+  basic: [
     'variables and constants',
     'data types and type conversion',
     'operators and expressions',
@@ -10,7 +10,7 @@ const LEVEL_TOPICS = {
     'functions (definition, parameters, return)',
     'string, list and dictionary basics',
   ],
-  Intermediate: [
+  intermediate: [
     'lists, tuples, sets and dictionaries',
     'list methods and slicing',
     'object-oriented programming (classes, objects, inheritance)',
@@ -18,9 +18,9 @@ const LEVEL_TOPICS = {
     'file handling (read / write)',
     'lambda and map / filter',
     'modules and import',
-  ],
-  Advanced: [
     'decorators',
+  ],
+  advanced: [
     'generators and yield',
     'list, dict and set comprehensions',
     'modules, packages and __name__',
@@ -29,6 +29,14 @@ const LEVEL_TOPICS = {
     'functools and itertools',
   ],
 };
+
+const ALL_TOPICS = [
+  ...new Set([
+    ...LEVEL_TOPICS.basic,
+    ...LEVEL_TOPICS.intermediate,
+    ...LEVEL_TOPICS.advanced,
+  ]),
+];
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 const GEMINI_FALLBACK_MODEL = 'gemini-3.1-flash-lite-preview';
@@ -43,17 +51,17 @@ function shuffle(options) {
 }
 
 function resolveLevelKey(level) {
-  if (!level) return 'Fundamentals';
+  if (!level) return 'basic';
   const l = level.toLowerCase();
-  if (l.includes('interm')) return 'Intermediate';
-  if (l.includes('adv')) return 'Advanced';
-  return 'Fundamentals';
+  if (l.includes('interm')) return 'intermediate';
+  if (l.includes('adv')) return 'advanced';
+  return 'basic';
 }
 
 function buildPrompt(levelKey, topics, count) {
   const topicList =
-    topics.filter((t) => typeof t === 'string' && t.trim()).join(', ') || LEVEL_TOPICS[levelKey].join(', ');
-  return `You are a Python question paper generator. Create exactly ${count} multiple-choice questions targeting "${levelKey}" level Python on these topics: ${topicList}.
+    topics.filter((t) => typeof t === 'string' && t.trim()).join(', ') || ALL_TOPICS.join(', ');
+  return `Generate a ${count} mark MCQ test paper for Python ${levelKey} level. Include all these topics: ${topicList}.
 
 Each question must:
 - Be clear, specific and self-contained (no external code files).
@@ -106,7 +114,7 @@ async function generatePaperQuestions(apiKey, levelKey, topics, count) {
 function normalizeQuestions(list) {
   return list
     .filter((q) => q && typeof q.question === 'string' && Array.isArray(q.options) && q.options.length >= 2)
-    .slice(0, 20)
+    .slice(0, 25)
     .map((q, i) => {
       const options = q.options.slice(0, 4);
       while (options.length < 4) options.push(`Option ${options.length + 1}`);
@@ -175,7 +183,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Gemini API key is not configured on the server' });
       }
 
-      const count = Math.min(Math.max(Number(req.query.q) || 10, 5), 20);
+      const count = Math.min(Math.max(Number(req.query.q) || 25, 5), 25);
       const levelKey = resolveLevelKey(test.level);
       const topics = Array.isArray(test.topics) ? test.topics : [];
 
