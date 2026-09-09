@@ -18,6 +18,7 @@ export default function ResultCard({ result, studentInfo, testName, onRetake, te
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             testId: result.testId,
+            paperId: result.paperId,
             studentName: result.studentName,
             studentRegisterId: result.studentRegisterId,
             answers: result.answers,

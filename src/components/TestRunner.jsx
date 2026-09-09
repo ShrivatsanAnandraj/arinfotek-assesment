@@ -15,8 +15,9 @@ export default function TestRunner({ testData, studentInfo, onSubmit }) {
     onSubmit({
       score: null,
       total,
-      answers,
+answers,
       testId: test.id,
+      paperId: testData.paperId,
       studentName: studentInfo.name,
       studentRegisterId: studentInfo.registerId,
       _raw: true,

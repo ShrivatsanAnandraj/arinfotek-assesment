@@ -8,6 +8,7 @@ export default function JoinCard({ onStart }) {
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
   const [testInfo, setTestInfo] = useState(null);
+  const [generating, setGenerating] = useState(false);
   const autoStarted = useRef(false);
 
   useEffect(() => {
@@ -73,12 +74,30 @@ export default function JoinCard({ onStart }) {
     }
   };
 
-  const handleChoice = (choice) => {
-    onStart({
-      student: { name: name.trim(), registerId: registerId.trim() },
-      test: testInfo,
-      action: choice
-    });
+  const handleChoice = async (choice) => {
+    const student = { name: name.trim(), registerId: registerId.trim() };
+    if (choice === 'survey') {
+      onStart({ student, test: testInfo, action: 'survey' });
+      return;
+    }
+    setGenerating(true);
+    setError('');
+    try {
+      const res = await fetch(
+        '/api/tests?action=paper&code=' + encodeURIComponent(testInfo.test?.test_code || '') +
+        '&name=' + encodeURIComponent(student.name) +
+        '&reg=' + encodeURIComponent(student.registerId)
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Could not generate questions');
+      }
+      onStart({ student, test: data, action: 'test' });
+    } catch (err) {
+      setError(err.message || 'Failed to generate questions. Please try again.');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   if (verified && testInfo) {
@@ -98,16 +117,27 @@ export default function JoinCard({ onStart }) {
           <div className="space-y-3">
             <button
               onClick={() => handleChoice('test')}
-              className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-primary hover:bg-primary/5 transition-all text-left"
+              disabled={generating}
+              className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-primary hover:bg-primary/5 transition-all text-left disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round"d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+                {generating ? (
+                  <div className="w-6 h-6 border-[3px] border-primary border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round"d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                )}
               </div>
               <div>
-                <div className="font-bold text-sm text-slate-800">Take Test</div>
-                <div className="text-xs text-slate-500">{testInfo.test?.title} &mdash; {testInfo.questions?.length} questions</div>
+                <div className="font-bold text-sm text-slate-800">
+                  {generating ? 'Generating Questions...' : 'Take Test'}
+                </div>
+                <div className="text-xs text-slate-500">
+                  {generating
+                    ? 'Creating a fresh set of questions for you'
+                    : `${testInfo.test?.title} &mdash; ${testInfo.questions?.length || 10} questions, generated fresh each time`}
+                </div>
               </div>
             </button>
 

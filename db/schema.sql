@@ -40,3 +40,15 @@ CREATE TABLE IF NOT EXISTS tab_flags (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   resolved_at TIMESTAMPTZ
 );
+
+CREATE TABLE IF NOT EXISTS question_papers (
+  id SERIAL PRIMARY KEY,
+  test_code TEXT NOT NULL REFERENCES tests(test_code) ON DELETE CASCADE,
+  student_name TEXT NOT NULL,
+  student_register_id TEXT NOT NULL,
+  level TEXT NOT NULL DEFAULT '',
+  question_count INT NOT NULL DEFAULT 10,
+  questions JSONB NOT NULL,
+  answer_key JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
