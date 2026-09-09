@@ -183,6 +183,12 @@ export default async function handler(req, res) {
     const test = testResult[0];
 
     if (action === 'paper') {
+      const isPythonTest = /python/i.test(`${test.course} ${test.subject} ${test.title}`);
+      if (!isPythonTest) {
+        const dbQuestions = await sql`SELECT id, question_text, options FROM questions WHERE test_id = ${test.id} ORDER BY id`;
+        return res.status(200).json({ test, questions: dbQuestions, fallback: true });
+      }
+
       const { name, reg } = req.query;
       if (!name || !reg) {
         return res.status(400).json({ error: 'name and reg are required' });
